@@ -51,7 +51,7 @@ export default {
 
   'settings.title': 'Settings',
   'settings.vibrate': 'Vibrate on new whispers',
-  'settings.noVibrate': 'This phone can’t vibrate from a web page (iPhones can’t). New whispers glow instead.',
+  'settings.noVibrate': 'This browser can’t vibrate for web pages (Firefox and iPhone browsers can’t). New whispers glow instead. On Android, Chrome or Samsung Internet can vibrate.',
   'settings.keepAwake': 'Keep screen on',
   'settings.keepAwakeHint': 'Stops the screen from sleeping while this page is open. Uses more battery.',
   'settings.noKeepAwake': 'Not available here (it needs HTTPS and a recent browser).',
