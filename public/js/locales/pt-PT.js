@@ -156,7 +156,7 @@ export default {
   'dm.resetLink': 'Repor link de DM',
   'dm.resetConfirm': 'Criar um novo link de DM? O antigo deixa de funcionar em todos os dispositivos.',
   'dm.saveLinkTitle': 'Guarda o teu link de DM',
-  'dm.saveLinkText': 'Não há contas: este link é a chave da tua sala. Guarda-o num sítio seguro, como um gestor de palavras-passe ou um email para ti próprio. Não o partilhes com os jogadores.',
+  'dm.saveLinkText': 'Não há contas: este link é a chave da tua sala. Guarda esta página nos marcadores, ou guarda o link num gestor de palavras-passe ou num email para ti próprio. Não o partilhes com os jogadores.',
   'dm.copyFailed': 'Não foi possível copiar. Seleciona o link e copia-o à mão.',
   'dm.emailLink': 'Enviar-me por email',
   'dm.mailSubject': 'O meu link de DM do Tabletop Whisperer',
