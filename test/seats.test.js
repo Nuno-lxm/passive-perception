@@ -142,3 +142,34 @@ test("rotating the DM key signs out every DM device and the old key stops workin
   assert.equal((await r.call('POST', '/cards', { auth: r.key, body: {} })).status, 401);
   assert.equal((await r.call('POST', '/cards', { auth: data.adminKey, body: {} })).status, 201);
 });
+
+test('repeated requests for the same seat leave one banner; the older waiting device is told', async () => {
+  const r = await freshRoom();
+  const dm = await r.join({ role: 'dm', key: r.key });
+  await r.call('POST', '/claim', { body: { seatId: r.ids.Ana } });
+  const first = await r.call('POST', '/claim', { body: { seatId: r.ids.Ana } });
+  const waiting = await r.join({ role: 'pending', claim: first.data.pending });
+  for (let i = 0; i < 5; i++) await r.call('POST', '/claim', { body: { seatId: r.ids.Ana } });
+  const last = await r.call('POST', '/claim', { body: { seatId: r.ids.Ana } });
+
+  assert.equal(dm.last('claims').claims.length, 1);
+  assert.equal(r.store.sql('SELECT count(*) AS n FROM claims')[0].n, 1);
+  assert.equal(waiting.last('signedOut').reason, 'replaced');
+  assert.equal((await r.call('POST', `/claims/${first.data.pending}/approve`, { auth: r.key })).status, 404);
+  assert.equal((await r.call('POST', `/claims/${last.data.pending}/approve`, { auth: r.key })).status, 200);
+
+  await r.call('POST', '/claim', { body: { seatId: r.ids.Bruno } });
+  await r.call('POST', '/claim', { body: { seatId: r.ids.Bruno } });
+  assert.equal(dm.last('claims').claims.length, 1, 'other seats still get their own request');
+});
+
+test('the waiting device can withdraw its request, and the banner goes away', async () => {
+  const r = await freshRoom();
+  const dm = await r.join({ role: 'dm', key: r.key });
+  await r.call('POST', '/claim', { body: { seatId: r.ids.Ana } });
+  const { data } = await r.call('POST', '/claim', { body: { seatId: r.ids.Ana } });
+  assert.equal(dm.last('claims').claims.length, 1);
+  await r.call('POST', '/cancel-claim', { body: { claim: data.pending } });
+  assert.deepEqual(dm.last('claims').claims, []);
+  assert.equal((await r.call('POST', `/claims/${data.pending}/approve`, { auth: r.key })).status, 404);
+});

@@ -55,3 +55,9 @@ export function saveSeat(code, seat) {
 /** The last feed seen for a room, so the page shows it instantly while reconnecting. */
 export const cachedFeed = (/** @type {string} */ code) => read(`feed.${code}`, null);
 export const saveFeed = (/** @type {string} */ code, /** @type {any} */ feed) => write(`feed.${code}`, feed);
+
+/** A join request waiting for the DM, per room, so tapping again resumes it instead of asking twice. */
+export const pendingClaim = (/** @type {string} */ code) =>
+  /** @type {{ seatId: string, claimId: string } | null} */ (read(`pending.${code}`, null));
+export const savePendingClaim = (/** @type {string} */ code, /** @type {{ seatId: string, claimId: string } | undefined} */ claim) =>
+  write(`pending.${code}`, claim);
