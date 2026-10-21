@@ -3,6 +3,11 @@ services:
     build: .
     ports:
       - "8080:8080"
+    environment:
+      # The address players' phones use to reach this machine (shown in the join QR code).
+      # Inside Docker the server can't see your machine's address, so set it here.
+      # PUBLIC_URL: http://192.168.1.23:8080
+      PUBLIC_URL: ${PUBLIC_URL:-}
     volumes:
       - whisperer-data:/data
     restart: unless-stopped
