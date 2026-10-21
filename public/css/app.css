@@ -153,7 +153,6 @@ label { font-weight: 600; font-size: 0.95rem; }
 .ack { min-height: 36px; padding: 4px 12px; font-size: 0.9rem; }
 .ack[aria-pressed="true"] { color: var(--online); }
 .empty { text-align: center; padding: 48px 16px; color: var(--muted); }
-.activate { display: flex; width: calc(100% - 24px); max-width: 39rem; margin: 12px auto 0; border-style: dashed; color: var(--accent); }
 .new-pill {
   position: fixed; top: calc(64px + env(safe-area-inset-top)); left: 50%; transform: translateX(-50%); z-index: 6;
   background: var(--accent); color: var(--accent-text); border: none; border-radius: 999px; font-weight: 600; min-height: 36px;

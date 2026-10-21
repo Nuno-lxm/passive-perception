@@ -36,7 +36,6 @@ export default {
   'feed.empty': 'Nothing yet. When your DM reveals something to you, it appears here.',
   'feed.emptyHint': 'Keep this page open.',
   'feed.emptyHintAwake': 'Keep this page open. “Keep screen on” in ⚙ stops the phone from sleeping.',
-  'feed.tapForVibration': 'Tap here to turn on vibration for new whispers',
   'feed.session': 'Session {n} · {date}',
   'feed.shared': 'shared with the table',
   'feed.edited': 'edited',
@@ -50,10 +49,6 @@ export default {
   'reader.larger': 'Larger text',
 
   'settings.title': 'Settings',
-  'settings.vibrate': 'Vibrate on new whispers',
-  'settings.noVibrate': 'This browser can’t vibrate for web pages (Firefox and iPhone browsers can’t). New whispers glow instead. On Android, Chrome or Samsung Internet can vibrate.',
-  'settings.testVibration': 'Test vibration',
-  'settings.testVibrationHint': 'Didn’t feel anything? This browser doesn’t allow vibration (DuckDuckGo and some in-app browsers don’t). Chrome or Samsung Internet do. New whispers still glow.',
   'settings.keepAwake': 'Keep screen on',
   'settings.keepAwakeHint': 'Stops the screen from sleeping while this page is open. Uses more battery.',
   'settings.noKeepAwake': 'Not available here (it needs HTTPS and a recent browser).',
