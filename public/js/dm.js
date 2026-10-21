@@ -473,9 +473,13 @@ function openCard(cardId) {
 
     const holders = state.seats.filter((s) => card.seats[s.id] && card.seats[s.id].revealedAt != null);
     content.replaceChildren(...[
-      card.title && h('h2', null, card.title),
-      card.body && h('p.body', null, card.body),
-      card.images.length > 0 && h('div.images', null, ...card.images.map((image) => dmThumb(image, card.title))),
+      // The card exactly as players see it: the same parchment slip as their feed.
+      h('article.note.preview', null,
+        card.title && h('h3', null, card.title),
+        card.body && h('p.body', null, card.body),
+        card.images.length > 0 && h('div.images', { dataset: { count: String(card.images.length) } },
+          ...card.images.map((image) => dmThumb(image, card.title))),
+        !card.title && !card.body && !card.images.length && h('p.hint', null, t('dm.untitled'))),
       h('h3', null, t('dm.whoGetsIt')),
       h('div.chips', null, ...seatChips(selected, () => everyone, (v) => (everyone = v), render, card)),
       reveal,
