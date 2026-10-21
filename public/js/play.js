@@ -443,6 +443,9 @@ async function signedOut(reason) {
   showSeatPicker(t(key));
 }
 
+// A personal link opened in a tab already on /play changes only the #fragment, which doesn't reload the page.
+addEventListener('hashchange', () => location.reload());
+
 // Last, so every module-level variable above exists before anything runs.
 translatePage();
 start();

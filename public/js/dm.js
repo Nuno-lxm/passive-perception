@@ -832,6 +832,10 @@ async function resetKey() {
   showSaveLink(true);
 }
 
+// The room is chosen by the #fragment (e.g. links on "My rooms"), and changing only the fragment doesn't
+// reload the page, so start over when it changes. (start() itself uses replaceState, which doesn't trigger this.)
+addEventListener('hashchange', () => location.reload());
+
 // Last, so every module-level variable above exists before anything runs.
 translatePage();
 start();
