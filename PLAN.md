@@ -455,7 +455,7 @@ Checked in Oct 2026; see the sources at the end. Daily limits reset at **00:00 U
 - Cloudflare could change the free tier. The self-host path is the insurance.
 - workers.dev links can be distrusted by some filters. A domain fixes that if needed.
 - Rate limits can be gamed. Strict counts go in the AdminDO; the rest are approximate.
-- The Workers rate-limit binding and DO EU restriction **might not be on the free plan**. Check in M0; the AdminDO fallback covers rate limits.
+- Rate limits can't be fully trusted: the binding is approximate and counts per location. Strict limits use the AdminDO.
 
 ---
 
@@ -472,7 +472,8 @@ Both hosts are in v1. I don't know the date of your next session; tell me and I'
 - `src/core` adapter interface + schema + first `node --test` tests running on `node:sqlite`.
 
 **M0 findings:**
-- Local `workerd` doesn't implement DO jurisdictions, so `pnpm dev:cf` clears `DO_JURISDICTION`. Whether `'eu'` works on the free plan is only known after a real deploy.
+- Local `workerd` doesn't implement DO jurisdictions, so `pnpm dev:cf` clears `DO_JURISDICTION`.
+- **Confirmed on the deployed staging Worker (free plan):** EU-restricted Durable Objects work (`jurisdiction: "eu"`, DO ping ok), and the Workers rate-limit binding works. Rooms stay `'eu'` from now on.
 - Durable Object SQL refuses some SQLite functions (`sqlite_version()` was refused). The core must stick to plain SQL; the tests on `node:sqlite` won't catch this, so the smoke test against `pnpm dev:cf` matters.
 - pnpm only runs install scripts it has been told to trust (`pnpm-workspace.yaml` → `allowBuilds`: esbuild, workerd).
 
