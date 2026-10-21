@@ -11,6 +11,7 @@ export { RoomDO } from './room-do.js';
  * @property {DurableObjectNamespace} ROOM
  * @property {string} [DO_JURISDICTION]  'eu' keeps room data in the EU. Fixed for good once rooms exist.
  * @property {{ limit(options: { key: string }): Promise<{ success: boolean }> }} [JOIN_LIMIT]
+ * @property {{ limit(options: { key: string }): Promise<{ success: boolean }> }} [CREATE_LIMIT]
  */
 
 export default {
@@ -36,6 +37,13 @@ function cloudflareHost(env) {
   return {
     // A Durable Object exists as soon as it's addressed; Room writes nothing until create().
     room: (code) => rooms.get(rooms.idFromName(code)),
+    // Approximate, per Cloudflare location. Strict daily limits come with the AdminDO (M2).
+    async allow(request, bucket) {
+      const limiter = bucket === 'create' ? env.CREATE_LIMIT : env.JOIN_LIMIT;
+      if (!limiter) return true;
+      const ip = request.headers.get('cf-connecting-ip') ?? 'unknown';
+      return (await limiter.limit({ key: `${bucket}:${ip}` })).success;
+    },
     async health(request) {
       const checks = { ok: true, host: 'cloudflare', jurisdiction: env.DO_JURISDICTION ?? null };
       try {

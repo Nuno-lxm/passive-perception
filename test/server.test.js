@@ -6,6 +6,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { once } from 'node:events';
 import { startServer } from '../src/node/server.js';
+import { runSmoke } from './smoke.js';
 
 test('Node host serves the app and the API', async (t) => {
   const dataDir = mkdtempSync(join(tmpdir(), 'whisperer-'));
@@ -45,4 +46,6 @@ test('Node host serves the app and the API', async (t) => {
 
   assert.equal((await fetch(`${base}/api/rooms/ZZZZZZ`)).status, 404);
   assert.equal(readdirSync(join(dataDir, 'rooms')).filter((f) => f.endsWith('.sqlite')).length, 1, 'no file for a guessed code');
+
+  await runSmoke(base);
 });
