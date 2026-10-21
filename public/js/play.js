@@ -10,6 +10,8 @@ import { openViewer } from './viewer.js';
 const app = $('#app');
 const wake = screenWakeLock();
 const canVibrate = typeof navigator.vibrate === 'function';
+/** Two short pulses: noticeable in a pocket or hand, still quiet. */
+const BUZZ = [90, 70, 90];
 
 /** @type {string | null} */
 let code = null;
@@ -186,6 +188,7 @@ function showFeed() {
       h('button.icon', { type: 'button', 'aria-label': t('settings.title'), onclick: openSettings }, '⚙'),
     ),
     newPill,
+    vibrationBar(),
     list,
   );
   wake.set(storage.prefs().keepAwake === true);
@@ -233,7 +236,7 @@ function showFeed() {
   addEventListener('scroll', updatePill, { passive: true });
 
   function buzz() {
-    if (canVibrate && storage.prefs().vibrate !== false) navigator.vibrate(60);
+    if (canVibrate && storage.prefs().vibrate !== false) navigator.vibrate(BUZZ);
   }
 
   function save() {
@@ -369,6 +372,26 @@ function showFeed() {
   socket = connectRoom(roomCode, () => ({ role: 'player', token: storage.seats()[roomCode]?.token }), { onMessage, onStatus });
 }
 
+/**
+ * Chrome only lets a page vibrate after it has been tapped since it loaded. A player who comes back to the
+ * page (reload, reopened tab) is reconnected without tapping anything, so new whispers would arrive silently.
+ * This bar asks for one tap; it only shows when vibration is on and would otherwise be blocked.
+ */
+function vibrationBar() {
+  const active = () => /** @type {any} */ (navigator).userActivation?.hasBeenActive ?? false;
+  const bar = h('button.activate', {
+    type: 'button',
+    hidden: !canVibrate || storage.prefs().vibrate === false || active(),
+    onclick: () => {
+      navigator.vibrate?.(BUZZ);
+      bar.hidden = true;
+    },
+  }, `📳 ${t('feed.tapForVibration')}`);
+  // Any tap anywhere counts, so hide the bar after the first one.
+  addEventListener('pointerup', () => setTimeout(() => active() && (bar.hidden = true)), { once: true });
+  return bar;
+}
+
 /** @param {Item} item */
 function openReader(item) {
   const scale = () => storage.prefs().textSize ?? 1.4;
@@ -393,7 +416,7 @@ function openSettings() {
   const vibrate = /** @type {HTMLInputElement} */ (h('input', { type: 'checkbox', id: 'vibrate', checked: p.vibrate !== false, disabled: !canVibrate }));
   vibrate.addEventListener('change', () => {
     storage.savePrefs({ vibrate: vibrate.checked });
-    if (vibrate.checked) navigator.vibrate?.(60);
+    if (vibrate.checked) navigator.vibrate?.(BUZZ);
   });
   const awake = /** @type {HTMLInputElement} */ (h('input', { type: 'checkbox', id: 'awake', checked: p.keepAwake === true, disabled: !wake.supported }));
   awake.addEventListener('change', () => {

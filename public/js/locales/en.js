@@ -36,6 +36,7 @@ export default {
   'feed.empty': 'Nothing yet. When your DM reveals something to you, it appears here.',
   'feed.emptyHint': 'Keep this page open.',
   'feed.emptyHintAwake': 'Keep this page open. “Keep screen on” in ⚙ stops the phone from sleeping.',
+  'feed.tapForVibration': 'Tap here to turn on vibration for new whispers',
   'feed.session': 'Session {n} · {date}',
   'feed.shared': 'shared with the table',
   'feed.edited': 'edited',
