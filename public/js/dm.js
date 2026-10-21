@@ -792,8 +792,7 @@ function showJoin() {
     holder.replaceChildren(
       qrSvg(url),
       h('p.code-big', null, formatRoomCode(state.code)),
-      h('p.url', null, url),
-      h('button', { type: 'button', onclick: async () => snackbar((await copyText(url)) ? t('common.copied') : url) }, t('common.copy')));
+      linkBox(url, t('dm.joinTitle')));
   };
   const picker = bases.length > 1 && h('select', {
     'aria-label': t('dm.address'),
@@ -815,31 +814,42 @@ async function personalLink(seat) {
     h('h2', null, t('dm.linkFor', { name: seat.name })),
     h('p.hint', null, t('dm.linkHint')),
     qrSvg(url),
-    h('p.url', null, url),
-    h('button.primary', { type: 'button', onclick: async () => snackbar((await copyText(url)) ? t('common.copied') : url) }, t('common.copy')),
+    linkBox(url, t('dm.linkFor', { name: seat.name })),
   ], { className: 'join-dialog' });
+}
+
+/**
+ * A read-only link with its Copy button joined to it.
+ * @param {string} url @param {string} label @param {string} [failed]  What to say if copying isn't possible.
+ */
+function linkBox(url, label, failed = url) {
+  const field = /** @type {HTMLInputElement} */ (h('input', { readonly: true, value: url, 'aria-label': label }));
+  field.addEventListener('focus', () => field.select());
+  return h('div.input-group', null, field,
+    h('button.primary', { type: 'button', onclick: async () => snackbar((await copyText(url)) ? t('common.copied') : failed) }, t('common.copy')));
 }
 
 /** Asks the DM to save their link (the only way back into the room). @param {boolean} first */
 function showSaveLink(first) {
   const link = dmLink(location.origin);
   const saved = /** @type {HTMLInputElement} */ (h('input', { type: 'checkbox', id: 'saved-link' }));
-  const done = /** @type {HTMLButtonElement} */ (h('button.primary', { type: 'button', disabled: first }, t('common.continue')));
-  saved.addEventListener('change', () => (done.disabled = !saved.checked));
-  const field = /** @type {HTMLInputElement} */ (h('input', { readonly: true, value: link, 'aria-label': t('dm.yourLink') }));
-  field.addEventListener('focus', () => field.select());
+  const done = /** @type {HTMLButtonElement} */ (h('button', { type: 'button', disabled: first }, t('common.continue')));
+  saved.addEventListener('change', () => {
+    done.disabled = !saved.checked;
+    done.classList.toggle('primary', saved.checked); // once saved, Continue becomes the thing to press
+  });
   const mail = `mailto:?subject=${encodeURIComponent(t('dm.mailSubject'))}&body=${encodeURIComponent(link)}`;
 
   const dialog = openDialog([
     !first && closeButton(t('common.close')),
     h('h2', null, t('dm.saveLinkTitle')),
     h('p', null, t('dm.saveLinkText')),
-    field,
-    h('div.row', null,
-      h('button', { type: 'button', onclick: async () => snackbar((await copyText(link)) ? t('common.copied') : t('dm.copyFailed')) }, t('common.copy')),
-      h('a.button', { href: mail }, t('dm.emailLink'))),
-    first && h('div.field.check', null, saved, h('label', { for: 'saved-link' }, t('dm.savedIt'))),
-    done,
+    // The link with its Copy button joined to it; emailing is the quieter alternative below.
+    linkBox(link, t('dm.yourLink'), t('dm.copyFailed')),
+    h('p.alt', null, h('a', { href: mail }, t('dm.emailLink'))),
+    h('div.dialog-footer', null,
+      first && h('div.field.check', null, saved, h('label', { for: 'saved-link' }, t('dm.savedIt'))),
+      done),
   ].filter(/** @returns {x is HTMLElement} */ (x) => Boolean(x)), { className: 'save-link' });
   done.addEventListener('click', () => {
     storage.saveDmRoom(state.code, { key: state.key, savedLink: true });
