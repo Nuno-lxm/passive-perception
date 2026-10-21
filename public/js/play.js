@@ -282,7 +282,7 @@ function showFeed() {
       onclick: () => socket?.send({ t: 'ack', id: item.id }),
     }, item.acked ? `✓ ${t('feed.acked')}` : `👍 ${t('feed.ack')}`);
 
-    return h(`article.item${unseen.has(item.id) ? '.new' : ''}`, { dataset: { id: item.id } },
+    return h(`article.item.note${unseen.has(item.id) ? '.new' : ''}`, { dataset: { id: item.id } },
       item.title && h('h3', null, item.title),
       item.body && h('p.body', { tabindex: 0, role: 'button', 'aria-label': t('feed.readLarger'), onclick: () => openReader(item) }, item.body),
       item.images.length > 0 && images,
