@@ -419,8 +419,8 @@ A DM uses roughly 50–150 requests per session, which fits easily in the budget
 ### Player
 
 - One column, no navigation. A small status dot and a gear icon are the only interface around the feed.
-- **Vibration support:** Android Chrome and Samsung Internet only. iPhone browsers never had it, and Firefox removed it in version 129 (all platforms). Chrome also needs one tap on the page after each load, so the feed shows a "tap to turn on vibration" bar when needed. Browsers built on Android WebView (DuckDuckGo, many in-app browsers) may accept the call and do nothing, which a page can't detect, so Settings has a "Test vibration" button.
-- **Quiet by design:** no sound, ever. The vibration is one short 60 ms pulse that can be turned off, and the glow is subtle.
+- **Vibration: later (M3).** Tried in M1 and dropped for now: iPhones and Firefox (since 129) can't vibrate for web pages, Chrome needs a tap after every load, and WebView browsers (DuckDuckGo) ignore it silently. New whispers glow instead.
+- **Quiet by design:** no sound and no vibration; new whispers glow until seen.
 - **Keep screen on:** Wake Lock, requested again after `visibilitychange` (the browser releases it when the page is hidden). It warns about battery use.
 - Reader and image viewer are full-screen `<dialog>` elements, so the back gesture closes them (handled with `history.pushState`).
 - A **"N new ↑" pill** appears when new items arrive while the player is scrolled down.

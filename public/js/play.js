@@ -9,9 +9,6 @@ import { openViewer } from './viewer.js';
 
 const app = $('#app');
 const wake = screenWakeLock();
-const canVibrate = typeof navigator.vibrate === 'function';
-/** Two short pulses: noticeable in a pocket or hand, still quiet. */
-const BUZZ = [90, 70, 90];
 
 /** @type {string | null} */
 let code = null;
@@ -188,7 +185,6 @@ function showFeed() {
       h('button.icon', { type: 'button', 'aria-label': t('settings.title'), onclick: openSettings }, '⚙'),
     ),
     newPill,
-    vibrationBar(),
     list,
   );
   wake.set(storage.prefs().keepAwake === true);
@@ -234,10 +230,6 @@ function showFeed() {
     newPill.textContent = t('feed.newAbove', { count: offscreen });
   }
   addEventListener('scroll', updatePill, { passive: true });
-
-  function buzz() {
-    if (canVibrate && storage.prefs().vibrate !== false) navigator.vibrate(BUZZ);
-  }
 
   function save() {
     storage.saveFeed(roomCode, { items, sessions });
@@ -313,9 +305,8 @@ function showFeed() {
         seatName.textContent = message.seat.name;
         storage.saveSeat(roomCode, { ...seat, seatName: message.seat.name, roomName: message.room.name });
         const arrived = items.filter((i) => !known.has(i.id));
-        // First visit: everything is new but nothing buzzes. Back from sleep: buzz once for what arrived.
+        // Anything that arrived while away glows until it has been seen.
         for (const item of arrived) unseen.add(item.id);
-        if (cached && arrived.length) buzz();
         socket?.send({ t: 'got', ids: items.map((i) => i.id) });
         save();
         render();
@@ -327,7 +318,6 @@ function showFeed() {
         else items.push(message.item);
         if (message.fresh) {
           unseen.add(message.item.id);
-          buzz();
           socket?.send({ t: 'got', ids: [message.item.id] });
         }
         save();
@@ -372,26 +362,6 @@ function showFeed() {
   socket = connectRoom(roomCode, () => ({ role: 'player', token: storage.seats()[roomCode]?.token }), { onMessage, onStatus });
 }
 
-/**
- * Chrome only lets a page vibrate after it has been tapped since it loaded. A player who comes back to the
- * page (reload, reopened tab) is reconnected without tapping anything, so new whispers would arrive silently.
- * This bar asks for one tap; it only shows when vibration is on and would otherwise be blocked.
- */
-function vibrationBar() {
-  const active = () => /** @type {any} */ (navigator).userActivation?.hasBeenActive ?? false;
-  const bar = h('button.activate', {
-    type: 'button',
-    hidden: !canVibrate || storage.prefs().vibrate === false || active(),
-    onclick: () => {
-      navigator.vibrate?.(BUZZ);
-      bar.hidden = true;
-    },
-  }, `📳 ${t('feed.tapForVibration')}`);
-  // Any tap anywhere counts, so hide the bar after the first one.
-  addEventListener('pointerup', () => setTimeout(() => active() && (bar.hidden = true)), { once: true });
-  return bar;
-}
-
 /** @param {Item} item */
 function openReader(item) {
   const scale = () => storage.prefs().textSize ?? 1.4;
@@ -413,11 +383,6 @@ function openReader(item) {
 function openSettings() {
   const roomCode = /** @type {string} */ (code);
   const p = storage.prefs();
-  const vibrate = /** @type {HTMLInputElement} */ (h('input', { type: 'checkbox', id: 'vibrate', checked: p.vibrate !== false, disabled: !canVibrate }));
-  vibrate.addEventListener('change', () => {
-    storage.savePrefs({ vibrate: vibrate.checked });
-    if (vibrate.checked) navigator.vibrate?.(BUZZ);
-  });
   const awake = /** @type {HTMLInputElement} */ (h('input', { type: 'checkbox', id: 'awake', checked: p.keepAwake === true, disabled: !wake.supported }));
   awake.addEventListener('change', () => {
     storage.savePrefs({ keepAwake: awake.checked });
@@ -433,13 +398,6 @@ function openSettings() {
   openDialog([
     closeButton(t('common.close')),
     h('h2', null, t('settings.title')),
-    h('div.field.check', null, vibrate, h('label', { for: 'vibrate' }, t('settings.vibrate')),
-      !canVibrate && h('small', null, t('settings.noVibrate'))),
-    // Some browsers accept the call and do nothing (e.g. apps built on Android WebView without the vibrate
-    // permission, like DuckDuckGo). A page can't detect that, so let the player feel for themselves.
-    canVibrate && h('div.field', null,
-      h('button', { type: 'button', onclick: () => navigator.vibrate(BUZZ) }, `📳 ${t('settings.testVibration')}`),
-      h('small', null, t('settings.testVibrationHint'))),
     h('div.field.check', null, awake, h('label', { for: 'awake' }, t('settings.keepAwake')),
       h('small', null, wake.supported ? t('settings.keepAwakeHint') : t('settings.noKeepAwake'))),
     h('div.field', null, h('label', { for: 'language' }, t('settings.language')), language),

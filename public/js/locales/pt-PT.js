@@ -36,7 +36,6 @@ export default {
   'feed.empty': 'Ainda nada. Quando o teu DM te revelar alguma coisa, aparece aqui.',
   'feed.emptyHint': 'Mantém esta página aberta.',
   'feed.emptyHintAwake': 'Mantém esta página aberta. “Manter ecrã ligado” em ⚙ impede o telemóvel de adormecer.',
-  'feed.tapForVibration': 'Toca aqui para ligar a vibração para novos sussurros',
   'feed.session': 'Sessão {n} · {date}',
   'feed.shared': 'partilhado com a mesa',
   'feed.edited': 'editado',
@@ -50,10 +49,6 @@ export default {
   'reader.larger': 'Letra maior',
 
   'settings.title': 'Definições',
-  'settings.vibrate': 'Vibrar com novos sussurros',
-  'settings.noVibrate': 'Este navegador não consegue vibrar para páginas web (o Firefox e os navegadores de iPhone não conseguem). Os novos sussurros brilham em vez disso. No Android, o Chrome ou o Samsung Internet conseguem vibrar.',
-  'settings.testVibration': 'Testar vibração',
-  'settings.testVibrationHint': 'Não sentiste nada? Este navegador não permite vibração (o DuckDuckGo e alguns navegadores dentro de apps não permitem). O Chrome ou o Samsung Internet permitem. Os novos sussurros continuam a brilhar.',
   'settings.keepAwake': 'Manter ecrã ligado',
   'settings.keepAwakeHint': 'Impede o ecrã de adormecer enquanto esta página está aberta. Gasta mais bateria.',
   'settings.noKeepAwake': 'Não disponível aqui (precisa de HTTPS e de um navegador recente).',
