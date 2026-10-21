@@ -9,9 +9,10 @@ export const MIGRATIONS = [
     `CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT)`,
     `CREATE TABLE seats (id TEXT PRIMARY KEY, name TEXT NOT NULL, sort INTEGER NOT NULL,
        token_hash TEXT, link_hash TEXT, claimed_at INTEGER, last_seen_at INTEGER)`,
-    `CREATE TABLE claims (id TEXT PRIMARY KEY, seat_id TEXT NOT NULL, created_at INTEGER NOT NULL)`,
+    // A request to take over a claimed seat. Once approved, the new token waits here (≤ 10 min) for the device to pick it up.
+    `CREATE TABLE claims (id TEXT PRIMARY KEY, seat_id TEXT NOT NULL, created_at INTEGER NOT NULL, token TEXT)`,
     `CREATE TABLE cards (id TEXT PRIMARY KEY, title TEXT NOT NULL DEFAULT '', body TEXT NOT NULL DEFAULT '',
-       grp TEXT, sort REAL NOT NULL, public_at INTEGER, public_session INTEGER,
+       grp TEXT, quick INTEGER NOT NULL DEFAULT 0, sort REAL NOT NULL, public_at INTEGER, public_session INTEGER,
        created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL, content_at INTEGER NOT NULL)`,
     `CREATE TABLE images (id TEXT PRIMARY KEY, card_id TEXT NOT NULL, sort INTEGER NOT NULL, mime TEXT NOT NULL,
        w INTEGER NOT NULL, h INTEGER NOT NULL, bytes INTEGER NOT NULL, data BLOB NOT NULL, thumb BLOB,
