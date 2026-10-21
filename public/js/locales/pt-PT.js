@@ -51,7 +51,7 @@ export default {
 
   'settings.title': 'Definições',
   'settings.vibrate': 'Vibrar com novos sussurros',
-  'settings.noVibrate': 'Este telemóvel não consegue vibrar a partir de uma página web (os iPhones não conseguem). Os novos sussurros brilham em vez disso.',
+  'settings.noVibrate': 'Este navegador não consegue vibrar para páginas web (o Firefox e os navegadores de iPhone não conseguem). Os novos sussurros brilham em vez disso. No Android, o Chrome ou o Samsung Internet conseguem vibrar.',
   'settings.keepAwake': 'Manter ecrã ligado',
   'settings.keepAwakeHint': 'Impede o ecrã de adormecer enquanto esta página está aberta. Gasta mais bateria.',
   'settings.noKeepAwake': 'Não disponível aqui (precisa de HTTPS e de um navegador recente).',
