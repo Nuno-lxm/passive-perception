@@ -419,7 +419,7 @@ A DM uses roughly 50–150 requests per session, which fits easily in the budget
 ### Player
 
 - One column, no navigation. A small status dot and a gear icon are the only interface around the feed.
-- **Vibration support:** Android Chrome and Samsung Internet only. iPhone browsers never had it, and Firefox removed it in version 129 (all platforms). Chrome also needs one tap on the page after each load, so the feed shows a "tap to turn on vibration" bar when needed.
+- **Vibration support:** Android Chrome and Samsung Internet only. iPhone browsers never had it, and Firefox removed it in version 129 (all platforms). Chrome also needs one tap on the page after each load, so the feed shows a "tap to turn on vibration" bar when needed. Browsers built on Android WebView (DuckDuckGo, many in-app browsers) may accept the call and do nothing, which a page can't detect, so Settings has a "Test vibration" button.
 - **Quiet by design:** no sound, ever. The vibration is one short 60 ms pulse that can be turned off, and the glow is subtle.
 - **Keep screen on:** Wake Lock, requested again after `visibilitychange` (the browser releases it when the page is hidden). It warns about battery use.
 - Reader and image viewer are full-screen `<dialog>` elements, so the back gesture closes them (handled with `history.pushState`).

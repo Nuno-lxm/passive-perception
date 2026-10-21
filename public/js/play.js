@@ -435,6 +435,11 @@ function openSettings() {
     h('h2', null, t('settings.title')),
     h('div.field.check', null, vibrate, h('label', { for: 'vibrate' }, t('settings.vibrate')),
       !canVibrate && h('small', null, t('settings.noVibrate'))),
+    // Some browsers accept the call and do nothing (e.g. apps built on Android WebView without the vibrate
+    // permission, like DuckDuckGo). A page can't detect that, so let the player feel for themselves.
+    canVibrate && h('div.field', null,
+      h('button', { type: 'button', onclick: () => navigator.vibrate(BUZZ) }, `📳 ${t('settings.testVibration')}`),
+      h('small', null, t('settings.testVibrationHint'))),
     h('div.field.check', null, awake, h('label', { for: 'awake' }, t('settings.keepAwake')),
       h('small', null, wake.supported ? t('settings.keepAwakeHint') : t('settings.noKeepAwake'))),
     h('div.field', null, h('label', { for: 'language' }, t('settings.language')), language),
