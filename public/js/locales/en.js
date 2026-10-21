@@ -156,7 +156,7 @@ export default {
   'dm.resetLink': 'Reset DM link',
   'dm.resetConfirm': 'Make a new DM link? The old one stops working on every device.',
   'dm.saveLinkTitle': 'Save your DM link',
-  'dm.saveLinkText': 'There are no accounts: this link is the key to your room. Save it somewhere safe, like a password manager or an email to yourself. Don’t share it with players.',
+  'dm.saveLinkText': 'There are no accounts: this link is the key to your room. Bookmark this page, or save the link in a password manager or an email to yourself. Don’t share it with players.',
   'dm.copyFailed': 'Couldn’t copy. Select the link and copy it by hand.',
   'dm.emailLink': 'Email it to myself',
   'dm.mailSubject': 'My Tabletop Whisperer DM link',

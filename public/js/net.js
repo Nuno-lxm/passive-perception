@@ -108,6 +108,7 @@ export function connectRoom(code, hello, { onMessage, onStatus }) {
       pingTimer = setInterval(ping, PING_EVERY);
     };
     socket.onmessage = (event) => {
+      if (ws !== socket) return; // a replaced socket's last words (e.g. after reconnect()) don't count
       if (event.data === 'pong') return clearTimeout(pongTimer);
       let message;
       try {
@@ -167,11 +168,14 @@ export function connectRoom(code, hello, { onMessage, onStatus }) {
 
   return {
     send,
+    /** Starts a fresh connection now (e.g. with a new key), dropping the current one. */
     reconnect: () => {
       stopped = false;
       attempt = 0;
-      ws?.close();
-      if (!ws) open();
+      const old = ws;
+      ws = null;
+      old?.close();
+      open();
     },
     close() {
       stopped = true;

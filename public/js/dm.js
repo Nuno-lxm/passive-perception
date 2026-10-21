@@ -47,31 +47,46 @@ let socket = null;
 function start() {
   const fragment = new URLSearchParams(location.hash.slice(1));
   const code = normalizeRoomCode(fragment.get('r'));
-  const key = fragment.get('k');
-  if (code && key) {
-    storage.saveDmRoom(code, { key });
-    history.replaceState(null, '', `/dm#r=${code}`); // hide the key from the address bar and over-the-shoulder eyes
-  }
   if (!code) return showRoomList();
   const saved = storage.dmRooms()[code];
-  if (!saved) {
+  // The key stays in the address bar (after the #, so it never reaches the server): bookmarks and
+  // "Add to Home Screen" then keep working. A key in the address wins, but the one this device already
+  // had is kept as a fallback, in case the address is an old bookmark from before "Reset DM link".
+  const key = fragment.get('k') ?? saved?.key;
+  if (!key) {
     return app.replaceChildren(h('section.screen', null,
       h('h1', null, formatRoomCode(code)), h('p', null, t('dm.noKey')), h('a.button', { href: '/dm' }, t('dm.myRooms'))));
   }
+  fallbackKey = saved?.key && saved.key !== key ? saved.key : null;
   state.code = code;
-  state.key = saved.key;
+  setKey(key);
   buildShell();
-  if (!saved.savedLink) showSaveLink(true);
+  if (!storage.dmRooms()[code]?.savedLink) showSaveLink(true);
   socket = connectRoom(code, () => ({ role: 'dm', key: state.key }), { onMessage, onStatus });
   wake.set(storage.prefs().keepAwake === true);
 }
+
+/** A key that worked on this device before, tried if the one in the address is rejected. @type {string | null} */
+let fallbackKey = null;
+/** True while this device resets the DM link, so its own sign-out isn't shown as an error. */
+let rotating = false;
+
+/** Uses a DM key: remembers it and puts it in the address bar (without reloading). @param {string} key */
+function setKey(key) {
+  state.key = key;
+  storage.saveDmRoom(state.code, { key });
+  history.replaceState(null, '', dmLink());
+}
+
+/** The full DM link for this room. @param {string} [origin] */
+const dmLink = (origin = '') => `${origin}/dm#r=${state.code}&k=${state.key}`;
 
 function showRoomList() {
   const rooms = Object.entries(storage.dmRooms());
   app.replaceChildren(h('section.screen', null,
     h('h1', null, t('dm.myRooms')),
     rooms.length
-      ? h('div.stack', null, ...rooms.map(([code, room]) => h('a.button', { href: `/dm#r=${code}` }, `${room.name ?? ''} ${formatRoomCode(code)}`)))
+      ? h('div.stack', null, ...rooms.map(([code, room]) => h('a.button', { href: `/dm#r=${code}&k=${room.key}` }, `${room.name ?? ''} ${formatRoomCode(code)}`)))
       : h('p', null, t('dm.noRooms')),
     h('a.button.primary', { href: '/#create' }, t('landing.create')),
   ));
@@ -124,6 +139,13 @@ function onMessage(message) {
       break;
     }
     case 'signedOut':
+      if (message.reason === 'key_rotated' && rotating) return; // this device did it; resetKey() reconnects
+      if (message.reason === 'bad_key' && fallbackKey) {
+        setKey(fallbackKey); // the address held an outdated key; the one this device had still works
+        fallbackKey = null;
+        socket?.reconnect();
+        return;
+      }
       app.replaceChildren(h('section.screen', null,
         h('h1', null, state.room?.name ?? formatRoomCode(state.code)),
         h('p', null, message.reason === 'key_rotated' ? t('dm.keyRotated') : t('dm.badKey')),
@@ -796,7 +818,7 @@ async function personalLink(seat) {
 
 /** Asks the DM to save their link (the only way back into the room). @param {boolean} first */
 function showSaveLink(first) {
-  const link = `${location.origin}/dm#r=${state.code}&k=${state.key}`;
+  const link = dmLink(location.origin);
   const saved = /** @type {HTMLInputElement} */ (h('input', { type: 'checkbox', id: 'saved-link' }));
   const done = /** @type {HTMLButtonElement} */ (h('button.primary', { type: 'button', disabled: first }, t('common.continue')));
   saved.addEventListener('change', () => (done.disabled = !saved.checked));
@@ -824,12 +846,16 @@ function showSaveLink(first) {
 
 async function resetKey() {
   if (!confirm(t('dm.resetConfirm'))) return;
+  rotating = true;
   const result = await call('/rotate-key', { method: 'POST' });
-  if (!result.ok) return;
-  state.key = result.data.adminKey;
-  storage.saveDmRoom(state.code, { key: state.key, savedLink: false });
+  if (result.ok) {
+    fallbackKey = null;
+    setKey(result.data.adminKey);
+    storage.saveDmRoom(state.code, { key: state.key, savedLink: false });
+  }
   socket?.reconnect();
-  showSaveLink(true);
+  rotating = false;
+  if (result.ok) showSaveLink(true);
 }
 
 // The room is chosen by the #fragment (e.g. links on "My rooms"), and changing only the fragment doesn't

@@ -291,8 +291,12 @@ A DM uses roughly 50–150 requests per session, which fits easily in the budget
 ### DM authentication: the DM link
 
 - `https://…/dm#r=K7QF2M&k=<128-bit key>`. **The key is in the `#fragment`, which browsers never send to servers**, so it stays out of logs, analytics and `Referer` headers.
-- On load the page saves `{room: key}` in localStorage and removes the key from the address bar (`history.replaceState`),
-  so nobody can read it over the DM's shoulder. *Copy my DM link* rebuilds the link when needed.
+- On load the page saves `{room: key}` in localStorage and **keeps the key in the address bar**, so bookmarks and
+  "Add to Home Screen" work (an iPhone home-screen app has its own storage and only knows the address it was saved with).
+  Opening the room from "My rooms" puts the key back in the address. If the address holds an outdated key (an old
+  bookmark from before *Reset DM link*), the page falls back to the key this device already had.
+  (M1 first hid the key from the address bar against over-the-shoulder reading; phones barely show the fragment,
+  and it broke bookmarks, so that was dropped.)
 - **Any device with the link is a DM device**, e.g. a laptop for prep and a tablet at the table.
   **Reset DM link** creates a new key and signs out every other device.
 - **There's no recovery without the link, by design.** That's why the app asks the DM to confirm they saved it at creation time.
