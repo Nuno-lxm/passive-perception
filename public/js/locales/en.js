@@ -52,6 +52,8 @@ export default {
   'settings.title': 'Settings',
   'settings.vibrate': 'Vibrate on new whispers',
   'settings.noVibrate': 'This browser can’t vibrate for web pages (Firefox and iPhone browsers can’t). New whispers glow instead. On Android, Chrome or Samsung Internet can vibrate.',
+  'settings.testVibration': 'Test vibration',
+  'settings.testVibrationHint': 'Didn’t feel anything? This browser doesn’t allow vibration (DuckDuckGo and some in-app browsers don’t). Chrome or Samsung Internet do. New whispers still glow.',
   'settings.keepAwake': 'Keep screen on',
   'settings.keepAwakeHint': 'Stops the screen from sleeping while this page is open. Uses more battery.',
   'settings.noKeepAwake': 'Not available here (it needs HTTPS and a recent browser).',
