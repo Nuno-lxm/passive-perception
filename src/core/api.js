@@ -19,7 +19,7 @@ import { json, fail, readJson } from './http.js';
 const CREATE_ATTEMPTS = 5;
 
 /** Room routes anyone with the code can call; they're rate limited against guessing. */
-const JOIN_PATHS = new Set(['', '/info', '/claim', '/redeem', '/ws']);
+const JOIN_PATHS = new Set(['', '/info', '/claim', '/cancel-claim', '/redeem', '/ws']);
 
 /**
  * @param {Request} request

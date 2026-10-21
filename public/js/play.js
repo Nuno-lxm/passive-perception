@@ -77,7 +77,15 @@ async function showSeatPicker(/** @type {string} */ notice = '') {
     notice && h('p.notice', null, notice),
     h('p', null, t('join.whoAreYou')),
     h('div.seat-list', null, ...room.seats.map((/** @type {any} */ seat) =>
-      h('button.seat', { type: 'button', onclick: () => claim(roomCode, room.name, seat) },
+      h('button.seat', {
+        type: 'button',
+        onclick: async () => {
+          // One request at a time: no double taps while it's on its way.
+          for (const button of document.querySelectorAll('.seat')) /** @type {HTMLButtonElement} */ (button).disabled = true;
+          await claim(roomCode, room.name, seat);
+          for (const button of document.querySelectorAll('.seat')) /** @type {HTMLButtonElement} */ (button).disabled = false;
+        },
+      },
         h('span', null, seat.name),
         seat.claimed && h('small', null, t('join.taken'))))),
     room.joinLocked && h('p.hint', null, t('join.locked')),
@@ -87,12 +95,16 @@ async function showSeatPicker(/** @type {string} */ notice = '') {
 
 /** @param {string} roomCode @param {string} roomName @param {{ id: string, name: string }} seat */
 async function claim(roomCode, roomName, seat) {
+  // Already asked for this seat from this device: keep waiting on that request rather than sending another.
+  const pending = storage.pendingClaim(roomCode);
+  if (pending?.seatId === seat.id) return waitForApproval(roomCode, roomName, pending.claimId, seat);
   const result = await api(`/rooms/${roomCode}/claim`, { method: 'POST', body: { seatId: seat.id } });
   if (!result.ok) return snackbar(errorText(result.error));
   if (result.data.token) {
     storage.saveSeat(roomCode, { token: result.data.token, seatId: seat.id, seatName: seat.name, roomName });
     return showFeed();
   }
+  storage.savePendingClaim(roomCode, { seatId: seat.id, claimId: result.data.pending });
   waitForApproval(roomCode, roomName, result.data.pending, seat);
 }
 
@@ -101,16 +113,26 @@ function waitForApproval(roomCode, roomName, claimId, seat) {
   screen(roomName,
     h('p.big', null, t('join.askDm', { name: seat.name })),
     h('div.spinner', { 'aria-hidden': 'true' }),
-    h('button', { type: 'button', onclick: () => showSeatPicker() }, t('common.cancel')),
+    h('button', {
+      type: 'button',
+      onclick: () => {
+        storage.savePendingClaim(roomCode, undefined);
+        api(`/rooms/${roomCode}/cancel-claim`, { method: 'POST', body: { claim: claimId } });
+        showSeatPicker();
+      },
+    }, t('common.cancel')),
   );
   socket = connectRoom(roomCode, () => ({ role: 'pending', claim: claimId }), {
     onStatus: () => {},
     onMessage(message) {
       if (message.t === 'approved') {
+        storage.savePendingClaim(roomCode, undefined);
         storage.saveSeat(roomCode, { token: message.token, seatId: message.seat.id, seatName: message.seat.name, roomName });
         showFeed();
       } else if (message.t === 'signedOut') {
-        showSeatPicker(message.reason === 'denied' ? t('join.denied') : t('join.expired'));
+        storage.savePendingClaim(roomCode, undefined);
+        const notice = { denied: 'join.denied', replaced: 'join.replaced' }[/** @type {string} */ (message.reason)] ?? 'join.expired';
+        showSeatPicker(t(notice));
       }
     },
   });

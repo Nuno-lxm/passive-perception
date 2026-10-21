@@ -60,6 +60,7 @@ export class Room {
       if (method === 'GET' && pathname === '/info') return this.info();
       if (method === 'POST' && pathname === '/claim') return await this.claim(await readJson(request));
       if (method === 'POST' && pathname === '/redeem') return await this.redeem(await readJson(request));
+      if (method === 'POST' && pathname === '/cancel-claim') return this.cancelClaim(await readJson(request));
 
       const auth = await this.authenticate(request);
       if (!auth) return fail('unauthorized', 401);
@@ -212,12 +213,28 @@ export class Room {
       return json({ token, seat: { id: seat.id, name: seat.name } });
     }
 
+    // One open request per seat: a newer one replaces it, so the DM never sees a pile of banners for one seat.
+    // The device that made the older request is told, and can ask again.
+    const older = this.store.sql(`SELECT id FROM claims WHERE seat_id = ? AND token IS NULL`, seat.id).map((c) => String(c.id));
+    for (const conn of this.conns('pending')) {
+      if (older.includes(/** @type {any} */ (conn.meta()).claimId)) this.signOutConn(conn, 'replaced');
+    }
+    this.store.sql(`DELETE FROM claims WHERE seat_id = ? AND token IS NULL`, seat.id);
+
     const [{ n }] = this.store.sql(`SELECT count(*) AS n FROM claims`);
     if (n >= MAX_PENDING_CLAIMS) return fail('too_many_claims', 429);
     const claimId = newSecret();
     this.store.sql(`INSERT INTO claims (id, seat_id, created_at) VALUES (?, ?, ?)`, claimId, seat.id, now);
     this.toDms({ t: 'claims', claims: this.claims() });
     return json({ pending: claimId, seat: { id: seat.id, name: seat.name } }, 202);
+  }
+
+  /** The waiting device withdraws its own request (the claim id is its proof). @param {any} body  { claim } */
+  cancelClaim(body) {
+    if (typeof body?.claim !== 'string') return fail('claim_not_found', 404);
+    this.store.sql(`DELETE FROM claims WHERE id = ? AND token IS NULL`, body.claim);
+    this.toDms({ t: 'claims', claims: this.claims() });
+    return json({ ok: true });
   }
 
   /** A personal link: takes the seat without the DM's approval. @param {any} body  { secret } */

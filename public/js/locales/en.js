@@ -30,6 +30,7 @@ export default {
   'join.askDm': 'Ask your DM to approve “{name}” on their screen.',
   'join.denied': 'Your DM said no. Pick your own name.',
   'join.expired': 'That request expired. Try again.',
+  'join.replaced': 'Someone asked for this seat again from another device, so your request was replaced. Tap your name to ask again.',
   'join.badLink': 'That personal link no longer works. Ask your DM for a new one, or pick your name.',
 
   'feed.empty': 'Nothing yet. When your DM reveals something to you, it appears here.',

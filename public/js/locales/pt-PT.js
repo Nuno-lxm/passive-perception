@@ -30,6 +30,7 @@ export default {
   'join.askDm': 'Pede ao teu DM para aprovar “{name}” no ecrã dele.',
   'join.denied': 'O teu DM recusou. Escolhe o teu próprio nome.',
   'join.expired': 'O pedido expirou. Tenta outra vez.',
+  'join.replaced': 'Alguém voltou a pedir este lugar noutro dispositivo, por isso o teu pedido foi substituído. Toca no teu nome para pedir outra vez.',
   'join.badLink': 'Esse link pessoal já não funciona. Pede um novo ao teu DM, ou escolhe o teu nome.',
 
   'feed.empty': 'Ainda nada. Quando o teu DM te revelar alguma coisa, aparece aqui.',
