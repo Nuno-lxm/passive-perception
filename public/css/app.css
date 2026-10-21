@@ -389,7 +389,17 @@ body[data-tab="room"] .pane.room { display: block; }
 .join-dialog .qr { align-self: center; display: block; margin: 8px auto; }
 .code-big { font: 600 2.3rem/1 var(--mono); letter-spacing: 0.12em; margin: 10px 0 0; color: var(--accent); }
 .url { font-size: 0.85rem; color: var(--muted); overflow-wrap: anywhere; }
-.save-link input[readonly] { font: 0.85rem var(--mono); }
+/* An input with its button attached, e.g. the DM link and Copy. */
+.input-group { display: flex; margin: 4px 0 0; }
+.input-group input { flex: 1; min-width: 0; border-radius: var(--radius) 0 0 var(--radius); border-right: none; }
+.input-group button { border-radius: 0 var(--radius) var(--radius) 0; flex: none; }
+.alt { margin: 10px 0 0; font-size: 0.95rem; }
+.dialog-footer { display: flex; align-items: center; justify-content: space-between; gap: var(--gap); flex-wrap: wrap; margin-top: 20px; padding-top: 14px; border-top: 1px solid var(--line); }
+.dialog-footer .field { margin: 0; }
+.dialog-footer > button:last-child { margin-left: auto; }
+.input-group input[readonly] { font: 0.85rem var(--mono); text-overflow: ellipsis; }
+.join .input-group { width: 100%; margin-top: 8px; }
+.join-dialog .hint { margin: 10px 0 4px; }
 .keys { margin-top: 8px; }
 .empty-detail { padding: 48px 12px; font: italic 1.15rem var(--serif); }
 
