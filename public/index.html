@@ -2,13 +2,46 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" content="#121318">
   <title>Tabletop Whisperer</title>
-  <script type="module" src="js/hello.js"></script>
+  <meta name="description" content="Pass secret notes to players at the table, from the DM's phone to theirs. No app, no accounts.">
+  <link rel="stylesheet" href="/css/app.css">
+  <script type="module" src="/js/landing.js"></script>
 </head>
-<body>
-  <h1>Tabletop Whisperer</h1>
-  <p>Pass secret notes to players at the table. Coming soon.</p>
-  <pre id="status">Checking the server…</pre>
+<body class="landing">
+  <main class="screen">
+    <h1>Tabletop Whisperer</h1>
+    <p class="tagline" data-i18n="landing.tagline">Pass secret notes to players at the table, from the DM's phone to theirs. No app, no accounts.</p>
+
+    <section class="stack" aria-labelledby="join-title">
+      <h2 id="join-title" data-i18n="landing.join">Join a room</h2>
+      <form id="join" class="row">
+        <input id="join-code" name="code" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="7"
+               placeholder="K7Q-F2M" required data-i18n-aria-label="join.code" aria-label="Room code">
+        <button type="submit" class="primary" data-i18n="join.continue">Join</button>
+      </form>
+      <p id="join-error" class="error" role="alert"></p>
+    </section>
+
+    <section class="stack" id="create" aria-labelledby="create-title">
+      <h2 id="create-title" data-i18n="landing.create">Create a room</h2>
+      <form id="create-form" class="stack">
+        <label for="room-name" data-i18n="landing.roomName">Campaign name</label>
+        <input id="room-name" name="name" maxlength="80" required>
+        <label for="seats" data-i18n="landing.seats">Players, one per line</label>
+        <textarea id="seats" name="seats" rows="5" required></textarea>
+        <p class="hint" data-i18n="landing.seatsHint">Tip: use character names, not real names.</p>
+        <p id="create-error" class="error" role="alert"></p>
+        <button type="submit" class="primary" data-i18n="landing.createButton">Create room</button>
+      </form>
+      <p><a href="/dm" data-i18n="dm.myRooms">My rooms</a></p>
+    </section>
+
+    <footer class="hint">
+      <select id="language" data-i18n-aria-label="settings.language" aria-label="Language"></select>
+    </footer>
+  </main>
 </body>
 </html>

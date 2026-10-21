@@ -423,7 +423,10 @@ A DM uses roughly 50–150 requests per session, which fits easily in the budget
 ### DM
 
 - **Phone:** bottom tabs **Table · Cards · Room**. The reveal bar (chips + *Reveal to N*) sticks to the bottom, where a thumb reaches it.
-- **Tablet or desktop:** Table and Cards side by side. The card editor opens as a dialog.
+- **Tablet (≥ 800 px):** the Table column (quick whisper + recent reveals) stays on the left; Cards or Room fill the rest.
+- **Desktop (≥ 1100 px), during the session too:** three columns: Table · Cards · the open card (chips, Reveal, who has it, receipts).
+  Nothing covers the table view. Keyboard: `/` search, `1`–`9` pick players, `E` everyone, `Ctrl/⌘+Enter` reveals or sends
+  the quick whisper (never plain Enter), `Esc` closes the card. The card editor opens as a dialog.
 - **Avoiding mistakes:** the button says who it goes to ("Reveal to Ana, Bruno"), chips clear after each reveal, *Undo* shows for 6 s, and un-reveal and edit are one tap away.
 - The DM's screen also gets *Keep screen on*.
 - **Seat chips double as status.** The colours never look like a reveal happened. An undelivered reveal shows as a hollow ✓.
