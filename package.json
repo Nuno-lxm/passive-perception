@@ -1,0 +1,22 @@
+{
+  "name": "tabletop-whisperer",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Pass secret notes to players at the table, from the DM's phone to theirs. No app, no accounts.",
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=22.13"
+  },
+  "packageManager": "pnpm@12.14.0",
+  "scripts": {
+    "start": "node src/node/server.js",
+    "test": "node --test test/*.test.js",
+    "dev:cf": "wrangler dev --var DO_JURISDICTION:",
+    "deploy:staging": "wrangler deploy --env staging",
+    "deploy": "wrangler deploy"
+  },
+  "devDependencies": {
+    "wrangler": "^4.151.3"
+  }
+}

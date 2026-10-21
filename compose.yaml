@@ -1,0 +1,10 @@
+services:
+  whisperer:
+    build: .
+    ports:
+      - "8080:8080"
+    volumes:
+      - whisperer-data:/data
+    restart: unless-stopped
+volumes:
+  whisperer-data:
