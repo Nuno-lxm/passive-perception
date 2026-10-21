@@ -36,6 +36,7 @@ export default {
   'feed.empty': 'Ainda nada. Quando o teu DM te revelar alguma coisa, aparece aqui.',
   'feed.emptyHint': 'Mantém esta página aberta.',
   'feed.emptyHintAwake': 'Mantém esta página aberta. “Manter ecrã ligado” em ⚙ impede o telemóvel de adormecer.',
+  'feed.tapForVibration': 'Toca aqui para ligar a vibração para novos sussurros',
   'feed.session': 'Sessão {n} · {date}',
   'feed.shared': 'partilhado com a mesa',
   'feed.edited': 'editado',
