@@ -507,6 +507,14 @@ Both hosts are in v1. I don't know the date of your next session; tell me and I'
 
 - Landing page (one sentence, demo GIF, Create / Join, self-host link) + privacy page, EN + PT.
 - 60-day expiry alarm + "deleted on…" note on the DM screen; *Delete room now*; *Leave room*.
+- **Export / import a campaign** (moved here from M3: once rooms delete themselves, DMs need a way to keep their prep).
+  - **Export** (Room → *Export campaign*): one `.json` file with the room name, seat names, cards, groups and images
+    (base64), plus the reveal history (who got what, when, which session). Streamed by the room, since it can reach ~70 MB.
+    Seat tokens, links and the DM key are never exported.
+  - **Import** (landing page → *Create a room* → *From an export file*): makes a new room and asks
+    *Keep who has what* (moving hosts or restoring a backup) or *Start fresh* (run the same prep for another group).
+    Seats come in unclaimed, so players join again. Same validation as normal input; images are re-checked.
+  - The expiry note on the DM screen links to *Export campaign*. Files move between hosted and self-hosted versions.
 - Report button + public report form + `/admin` (freeze / delete) + aggregate counters.
 - All rate limits and caps, global storage tally, over-the-limit banners (tested by forcing errors).
 - Web Analytics on the landing and privacy pages.
@@ -515,7 +523,6 @@ Both hosts are in v1. I don't know the date of your next session; tell me and I'
 
 ### M3+: later, if people want it
 
-- Export / import a campaign (JSON with images, streamed), which is also how you'd move from hosted to self-hosted.
 - "Add to Home Screen" hint + manifest polish; optional **Web Push** ("New whisper", no content); *Blur until tapped* for nosy neighbours.
 - Drag-to-reorder, simple formatting (**bold**/*italic*), private DM notes on cards (never sent to players; the allowlist in §5 already protects them).
 - pt-BR and other languages from contributors; Ko-fi link; a custom domain + CSAM scanning if hosting grows.
