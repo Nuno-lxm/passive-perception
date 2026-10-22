@@ -968,9 +968,33 @@ function roomPane() {
 
     h('h2', null, t('dm.keeping')),
     expiry,
+    h('p.hint', null, t('dm.exportHint')),
     h('div.row', null,
+      h('button', { type: 'button', onclick: (/** @type {Event} */ e) => exportCampaign(/** @type {HTMLButtonElement} */ (e.currentTarget)) }, t('dm.export')),
       h('button.danger', { type: 'button', onclick: deleteRoomDialog }, t('dm.deleteRoom'))),
   );
+}
+
+/** Downloads the whole campaign as one file (cards, images, notes, who has what). @param {HTMLButtonElement} button */
+async function exportCampaign(button) {
+  const label = button.textContent;
+  button.disabled = true;
+  button.textContent = t('dm.exporting');
+  try {
+    const response = await fetch(`/api/rooms/${state.code}/export`, { headers: { authorization: `Bearer ${state.key}` } }).catch(() => null);
+    if (!response?.ok) return snackbar(errorText(response ? 'generic' : 'network'));
+    const blob = await response.blob();
+    const name = /filename="([^"]+)"/.exec(response.headers.get('content-disposition') ?? '')?.[1] ?? 'campaign.whisperer.json';
+    const url = URL.createObjectURL(blob);
+    const link = h('a', { href: url, download: name, hidden: true });
+    document.body.append(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 60_000);
+  } finally {
+    button.disabled = false;
+    button.textContent = label;
+  }
 }
 
 /** Deleting is permanent, so the DM types the room code to confirm. */

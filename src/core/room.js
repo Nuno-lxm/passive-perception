@@ -13,6 +13,7 @@ import { InputError, LIMITS, idList, parseCardFields, parseNewRoom, parseSeatNam
 import { canSee, feedFor, playerItem, seatsSeeing } from './feed.js';
 import { dmCards } from './dmview.js';
 import { IMAGE_LIMITS, checkImage } from './images.js';
+import { IMPORT_WINDOW, exportStream, importBatch } from './transfer.js';
 
 const HOUR = 60 * 60 * 1000;
 const DAY = 24 * HOUR;
@@ -91,6 +92,9 @@ export class Room {
 
       if (method === 'PATCH' && pathname === '/room') return this.patchRoom(body);
       if (method === 'DELETE' && pathname === '/room') return await this.deleteRoom('deleted');
+      if (method === 'GET' && pathname === '/export') return this.exportCampaign();
+      if (method === 'POST' && pathname === '/import') return this.importCampaign(body);
+      if (method === 'POST' && pathname === '/import/done') return this.finishImport();
       if (method === 'POST' && pathname === '/rotate-key') return await this.rotateKey();
       if (method === 'POST' && pathname === '/seats') return this.addSeat(body);
       if ((m = pathname.match(/^\/seats\/([^/]+)$/))) {
@@ -160,7 +164,10 @@ export class Room {
 
     migrate(this.store);
     this.store.tx(() => {
-      const meta = { code: body.code, name, created_at: now, last_active_at: now, admin_hash: adminHash, join_locked: 0 };
+      const meta = {
+        code: body.code, name, created_at: now, last_active_at: now, admin_hash: adminHash, join_locked: 0,
+        import_until: body.import === true ? now + IMPORT_WINDOW : 0, // a room made from an export file
+      };
       for (const [key, value] of Object.entries(meta)) this.setMeta(key, value);
       seats.forEach((seat, index) => {
         this.store.sql(`INSERT INTO seats (id, name, sort) VALUES (?, ?, ?)`, newId(), seat, index);
@@ -809,6 +816,38 @@ export class Room {
       this.setMeta('last_active_at', now);
       this.scheduleExpiry(now);
     }
+  }
+
+  // ---------- Export / import
+
+  /** The whole campaign as one JSON file download (see transfer.js). */
+  exportCampaign() {
+    const meta = this.meta();
+    const day = new Date(this.store.now()).toISOString().slice(0, 10);
+    const slug = meta.name.normalize('NFD').replace(/\p{M}/gu, '').replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '').toLowerCase() || 'campaign';
+    return new Response(exportStream(this.store, meta), {
+      headers: {
+        'content-type': 'application/json; charset=utf-8',
+        'content-disposition': `attachment; filename="${slug}-${day}.whisperer.json"`,
+        'cache-control': 'no-store',
+      },
+    });
+  }
+
+  /** @param {any} body  a batch of exported cards (seat ids already mapped to this room's) */
+  importCampaign(body) {
+    if (Number(this.meta().import_until ?? 0) < this.store.now()) return fail('import_closed', 403);
+    const imported = importBatch(this.store, body, newId);
+    return json({ imported });
+  }
+
+  /** Closes the import window and shows the DM the finished room. */
+  finishImport() {
+    this.setMeta('import_until', 0);
+    const [last] = this.store.sql(`SELECT max(revealed_at) AS at FROM grants`);
+    if (last?.at) this.setMeta('last_reveal_at', Number(last.at));
+    this.toDms({ t: 'cards', cards: dmCards(this.store) });
+    return json({ ok: true });
   }
 
   // ---------- Expiry and deletion

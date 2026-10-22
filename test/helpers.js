@@ -45,7 +45,8 @@ export function testRoom() {
       new Request(`https://room${path}`, { method, headers, body: raw ?? (body === undefined ? undefined : JSON.stringify(body)) }),
     );
     const type = response.headers.get('content-type') ?? '';
-    const data = type.startsWith('application/json') ? await response.json() : new Uint8Array(await response.arrayBuffer());
+    const download = (response.headers.get('content-disposition') ?? '').startsWith('attachment');
+    const data = type.startsWith('application/json') && !download ? await response.json() : new Uint8Array(await response.arrayBuffer());
     return { status: response.status, data, headers: response.headers };
   }
 

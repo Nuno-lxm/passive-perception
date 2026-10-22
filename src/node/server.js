@@ -14,7 +14,7 @@ import { openStore } from './adapter.js';
 import { findAsset, readHeadersFile } from './static.js';
 
 const PUBLIC_DIR = resolve(dirname(fileURLToPath(import.meta.url)), '../../public');
-const MAX_BODY = 2 * 1024 * 1024;
+const MAX_BODY = 8 * 1024 * 1024; // import batches are a few MB of base64 images
 const HEARTBEAT = 30 * 1000; // drop sockets whose phone vanished without closing them
 const EXPIRY_SWEEP = 60 * 60 * 1000; // check for rooms unused for ROOM_EXPIRY_DAYS once an hour
 
