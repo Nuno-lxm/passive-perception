@@ -35,7 +35,7 @@ export default {
 
   'feed.empty': 'Nothing yet. When your DM reveals something to you, it appears here.',
   'feed.emptyHint': 'Keep this page open.',
-  'feed.emptyHintAwake': 'Keep this page open. “Keep screen on” in ⚙ stops the phone from sleeping.',
+  'feed.emptyHintAwake': 'Keep this page open. “Keep screen on” in Settings (top right) stops the phone from sleeping.',
   'feed.session': 'Session {n} · {date}',
   'feed.shared': 'shared with the table',
   'feed.edited': 'edited',
@@ -134,6 +134,7 @@ export default {
   'dm.groupHint': 'Optional, e.g. a scene or session, to filter the list.',
   'dm.images': 'Add images',
   'dm.imagesHint': 'Up to 4 per card. They’re shrunk on this device before upload.',
+  'dm.imageCount': { one: '{count} image', other: '{count} images' },
   'dm.removeImage': 'Remove image',
   'dm.uploading': { one: 'Uploading image {n} of {count}…', other: 'Uploading image {n} of {count}…' },
   'dm.roomName': 'Campaign name',

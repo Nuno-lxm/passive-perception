@@ -35,7 +35,7 @@ export default {
 
   'feed.empty': 'Ainda nada. Quando o teu DM te revelar alguma coisa, aparece aqui.',
   'feed.emptyHint': 'Mantém esta página aberta.',
-  'feed.emptyHintAwake': 'Mantém esta página aberta. “Manter ecrã ligado” em ⚙ impede o telemóvel de adormecer.',
+  'feed.emptyHintAwake': 'Mantém esta página aberta. “Manter ecrã ligado” nas Definições (canto superior direito) impede o telemóvel de adormecer.',
   'feed.session': 'Sessão {n} · {date}',
   'feed.shared': 'partilhado com a mesa',
   'feed.edited': 'editado',
@@ -134,6 +134,7 @@ export default {
   'dm.groupHint': 'Opcional, por exemplo uma cena ou sessão, para filtrar a lista.',
   'dm.images': 'Adicionar imagens',
   'dm.imagesHint': 'Até 4 por carta. São reduzidas neste dispositivo antes de serem enviadas.',
+  'dm.imageCount': { one: '{count} imagem', other: '{count} imagens' },
   'dm.removeImage': 'Remover imagem',
   'dm.uploading': { one: 'A enviar imagem {n} de {count}…', other: 'A enviar imagem {n} de {count}…' },
   'dm.roomName': 'Nome da campanha',

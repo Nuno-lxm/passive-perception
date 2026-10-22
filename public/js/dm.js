@@ -236,8 +236,10 @@ function tablePane() {
   const photo = /** @type {HTMLInputElement} */ (h('input', { type: 'file', accept: 'image/*', id: 'quick-photo', class: 'visually-hidden' }));
   const photoLabel = h('label.button', { for: 'quick-photo' }, t('dm.addPhoto'));
   photo.addEventListener('change', () => {
-    photoLabel.textContent = photo.files?.[0] ? `📷 ${photo.files[0].name}` : t('dm.addPhoto');
+    const file = photo.files?.[0];
+    photoLabel.replaceChildren(icon('image', 18), h('span.file-name', null, file ? file.name : t('dm.addPhoto')));
   });
+  photoLabel.replaceChildren(icon('image', 18), h('span.file-name', null, t('dm.addPhoto')));
   const chips = h('div.chips');
   const send = /** @type {HTMLButtonElement} */ (h('button.primary.reveal', { type: 'button', 'aria-keyshortcuts': 'Control+Enter' }));
   const recent = h('div.recent');
@@ -257,7 +259,7 @@ function tablePane() {
       if (revealed) {
         text.value = '';
         photo.value = '';
-        photoLabel.textContent = t('dm.addPhoto');
+        photoLabel.replaceChildren(icon('image', 18), h('span.file-name', null, t('dm.addPhoto')));
         state.quickSeats.clear();
         state.quickEveryone = false;
         changed();
@@ -373,7 +375,8 @@ function cardRow(card) {
     h('strong', null, card.title || firstLine(card.body) || t('dm.untitled')),
     card.title && card.body && h('span.snippet', null, firstLine(card.body)),
     h('span.meta', null,
-      card.images.length > 0 && `🖼 ${card.images.length}`,
+      card.images.length > 0 && h('span.count', { 'aria-label': t('dm.imageCount', { count: card.images.length }) },
+        icon('image', 16), String(card.images.length)),
       card.grp && h('span.tag', null, card.grp),
       card.quick && h('span.tag', null, t('dm.quick'))),
     holders.length > 0 && h('span.holders', null, ...holders));

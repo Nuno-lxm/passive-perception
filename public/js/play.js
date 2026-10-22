@@ -4,7 +4,7 @@ import { errorText, formatDate, formatWhen, LANGUAGES, lang, setLanguage, t, tra
 import { api, connectRoom, forgetImages, imageUrl } from './net.js';
 import { formatRoomCode, normalizeRoomCode } from './room-code.js';
 import * as storage from './storage.js';
-import { $, closeButton, h, openDialog, screenWakeLock, snackbar, themeField } from './ui.js';
+import { $, closeButton, h, icon, openDialog, screenWakeLock, snackbar, themeField } from './ui.js';
 import { openViewer } from './viewer.js';
 
 const app = $('#app');
@@ -182,7 +182,7 @@ function showFeed() {
     h('header.bar', null,
       h('div.titles', null, roomTitle, seatName),
       status,
-      h('button.icon', { type: 'button', 'aria-label': t('settings.title'), onclick: openSettings }, '⚙'),
+      h('button.icon', { type: 'button', 'aria-label': t('settings.title'), title: t('settings.title'), onclick: openSettings }, icon('settings')),
     ),
     newPill,
     list,

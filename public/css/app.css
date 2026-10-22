@@ -333,6 +333,8 @@ label { font-weight: 700; font-size: 0.95rem; }
 .bar .status, .bar button.icon { color: var(--bar-muted); }
 .bar button.icon:hover { color: var(--bar-text); }
 .icon-svg { display: block; flex: none; }
+.count { display: inline-flex; align-items: center; gap: 4px; color: var(--muted); font-size: 0.85rem; }
+.file-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 14rem; }
 /* The join button: just the QR icon on phones, icon + "Join" from tablet width up. */
 .join-button { background: none; border: 1px solid transparent; color: var(--bar-muted); min-width: var(--tap); padding: 6px 10px; gap: 8px; }
 .join-button:hover { color: var(--bar-text); border-color: var(--line-strong); }
