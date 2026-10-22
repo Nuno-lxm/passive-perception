@@ -80,6 +80,8 @@ export default {
   'dm.tab.table': 'Mesa',
   'dm.tab.cards': 'Cartas',
   'dm.tab.room': 'Sala',
+  'dm.tab.settings': 'Definições',
+  'dm.thisDevice': 'Este dispositivo',
   'dm.myRooms': 'As minhas salas',
   'dm.noRooms': 'Ainda não há salas neste dispositivo.',
   'dm.noKey': 'Este dispositivo não tem o link de DM desta sala. Abre o link de DM que guardaste.',

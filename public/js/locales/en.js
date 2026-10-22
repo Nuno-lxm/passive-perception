@@ -80,6 +80,8 @@ export default {
   'dm.tab.table': 'Table',
   'dm.tab.cards': 'Cards',
   'dm.tab.room': 'Room',
+  'dm.tab.settings': 'Settings',
+  'dm.thisDevice': 'This device',
   'dm.myRooms': 'My rooms',
   'dm.noRooms': 'No rooms on this device yet.',
   'dm.noKey': 'This device doesn’t have the DM link for this room. Open your saved DM link.',

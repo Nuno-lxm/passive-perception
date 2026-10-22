@@ -6,7 +6,7 @@ import en from '../public/js/locales/en.js';
 import ptPT from '../public/js/locales/pt-PT.js';
 
 const DYNAMIC = {
-  'dm.tab.': ['table', 'cards', 'room'],
+  'dm.tab.': ['table', 'cards', 'room', 'settings'],
   'presence.': ['online', 'away', 'offline', 'unclaimed'],
   'status.': ['connecting', 'open', 'offline', 'stopped'],
   'signedOut.': ['moved', 'released', 'removed', 'left', 'other'],
