@@ -44,10 +44,6 @@ test('sessions: reveals within 6 hours share a session, a longer gap starts the 
   const { feed, sessions } = ana.last('welcome');
   assert.deepEqual(feed.map((i) => i.session), [2, 1, 1], 'newest first');
   assert.equal(sessions.length, 2);
-
-  await r.call('POST', '/sessions', { auth: key });
-  await reveal();
-  assert.equal(ana.last('item').item.session, 3, 'the DM can start a session by hand');
 });
 
 test('revealing to more players later adds them to the same card', async () => {

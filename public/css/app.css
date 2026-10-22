@@ -1,6 +1,7 @@
-/* Tabletop Whisperer: "Candlelit".
-   Warm and dark for a dim table: umber wood, parchment notes in dark ink, one candle-amber accent.
-   Alegreya (serif) for anything read; Alegreya Sans for controls. Fonts are served from here, not a CDN. */
+/* Tabletop Whisperer themes. Everything visual is a variable on :root, so a theme is a set of values.
+   Candlelit (default): warm and dark for a dim table; umber wood, parchment notes, one candle-amber accent,
+   Alegreya for anything read and Alegreya Sans for controls (served from here, not a CDN).
+   Daylight: light and plain; see :root[data-theme="daylight"]. js/theme.js picks the theme before the page paints. */
 
 @font-face { font-family: "Alegreya"; src: url("/fonts/alegreya-latin-wght-normal.woff2") format("woff2"); font-weight: 400 900; font-style: normal; font-display: swap; }
 @font-face { font-family: "Alegreya"; src: url("/fonts/alegreya-latin-wght-italic.woff2") format("woff2"); font-weight: 400 900; font-style: italic; font-display: swap; }
@@ -32,10 +33,78 @@
   --online: #9cc472;      /* moss */
   --away: #d9a441;
   --offline: #7d6c58;
+  --field-bg: var(--bg-deep);
+  --page-bg: radial-gradient(ellipse 120% 70% at 50% 0%, #2b2119 0%, var(--bg) 55%, var(--bg-deep) 100%);
+  --bar-bg: rgba(28, 22, 18, 0.94);
+  --bar-text: var(--text);
+  --bar-muted: var(--muted);
+  --bar-border: 3px double var(--line);
+  --accent-border: #b8842a;
+  --note-bg:
+    radial-gradient(ellipse at 15% 0%, rgba(255, 255, 255, 0.35), transparent 55%),
+    radial-gradient(ellipse at 100% 100%, rgba(140, 95, 40, 0.16), transparent 60%),
+    var(--parchment);
+  --note-shadow: 0 1px 0 rgba(255, 255, 255, 0.25) inset, 0 0 0 1px var(--parchment-edge) inset, 0 8px 20px rgba(0, 0, 0, 0.45);
+  --note-tilt: 0.35deg;   /* slips lie a little crooked, like paper on a table */
+  --note-line: rgba(43, 32, 24, 0.32);
+  --glow: rgba(217, 164, 65, 0.6);
+  --done: #4f6b2f;        /* 👍 given, on a note */
+  --note-link: #8a4b12;
+  --shade: rgba(0, 0, 0, 0.12);
+  --shade-2: rgba(0, 0, 0, 0.18);
+  --backdrop: rgba(10, 6, 3, 0.7);
+  --shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
   --radius: 4px;
   --gap: 12px;
   --tap: 44px;
   color-scheme: dark;
+}
+
+/* Daylight: a light, plain theme. Grey page, white cards, near-black text, one crimson accent,
+   a dark top bar and the device's own sans-serif. */
+:root[data-theme="daylight"] {
+  --serif: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  --sans: var(--serif);
+
+  --bg: #f2f2f4;
+  --bg-deep: #e8e8eb;
+  --surface: #ffffff;
+  --surface-2: #f6f6f8;
+  --line: #dddde2;
+  --line-strong: #c6c6cd;
+  --text: #1b1b1f;
+  --muted: #676771;
+  --accent: #c0262d;      /* crimson */
+  --accent-ink: #ffffff;
+  --accent-soft: rgba(192, 38, 45, 0.07);
+  --parchment: #ffffff;
+  --parchment-edge: #e1e1e6;
+  --ink: #1b1b1f;
+  --ink-muted: #676771;
+  --danger: #b42318;
+  --online: #23914d;
+  --away: #c98400;
+  --offline: #a3a3ac;
+
+  --field-bg: #ffffff;
+  --page-bg: var(--bg);
+  --bar-bg: #1f1f23;
+  --bar-text: #ffffff;
+  --bar-muted: #b4b4bc;
+  --bar-border: 3px solid var(--accent);
+  --accent-border: #a51f25;
+  --note-bg: #ffffff;
+  --note-shadow: 0 0 0 1px var(--line), 0 1px 3px rgba(20, 20, 30, 0.08);
+  --note-tilt: 0deg;
+  --note-line: var(--line-strong);
+  --glow: rgba(192, 38, 45, 0.28);
+  --done: #23914d;
+  --note-link: var(--accent);
+  --shade: #ececef;
+  --shade-2: #ffffff;
+  --backdrop: rgba(20, 20, 26, 0.45);
+  --shadow: 0 16px 48px rgba(20, 20, 30, 0.22);
+  color-scheme: light;
 }
 
 * { box-sizing: border-box; }
@@ -49,7 +118,7 @@ html {
 body {
   margin: 0;
   min-height: 100dvh;
-  background: radial-gradient(ellipse 120% 70% at 50% 0%, #2b2119 0%, var(--bg) 55%, var(--bg-deep) 100%);
+  background: var(--page-bg);
   color: var(--text);
   font: 17px/1.5 var(--sans);
   overscroll-behavior-y: contain; /* a swipe shouldn't reload the page by accident */
@@ -116,7 +185,7 @@ button:focus-visible, .button:focus-visible, input:focus-visible, select:focus-v
 .primary {
   background: var(--accent);
   color: var(--accent-ink);
-  border-color: #b8842a;
+  border-color: var(--accent-border);
   font-weight: 700;
   box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.18);
 }
@@ -130,7 +199,7 @@ input, select, textarea {
   width: 100%;
   min-height: var(--tap);
   padding: 8px 12px;
-  background: var(--bg-deep);
+  background: var(--field-bg);
   border: 1px solid var(--line-strong);
 }
 textarea { resize: vertical; line-height: 1.45; }
@@ -159,14 +228,11 @@ label { font-weight: 700; font-size: 0.95rem; }
 
 .note {
   position: relative;
-  background:
-    radial-gradient(ellipse at 15% 0%, rgba(255, 255, 255, 0.35), transparent 55%),
-    radial-gradient(ellipse at 100% 100%, rgba(140, 95, 40, 0.16), transparent 60%),
-    var(--parchment);
+  background: var(--note-bg);
   color: var(--ink);
   border-radius: 2px;
   padding: 16px 18px 12px;
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.25) inset, 0 0 0 1px var(--parchment-edge) inset, 0 8px 20px rgba(0, 0, 0, 0.45);
+  box-shadow: var(--note-shadow);
   font-family: var(--serif);
   font-size: 1.12rem;
   line-height: 1.5;
@@ -174,8 +240,8 @@ label { font-weight: 700; font-size: 0.95rem; }
 .note h3 { font-size: 1.28rem; margin-bottom: 0.3em; }
 .note .body { white-space: pre-wrap; overflow-wrap: anywhere; margin: 0; }
 .note .hint, .note .meta { color: var(--ink-muted); }
-.note .tag { border-color: rgba(43, 32, 24, 0.3); color: var(--ink-muted); }
-.note button { background: transparent; color: var(--ink); border-color: rgba(43, 32, 24, 0.35); font-family: var(--sans); }
+.note .tag { border-color: var(--note-line); color: var(--ink-muted); }
+.note button { background: transparent; color: var(--ink); border-color: var(--note-line); font-family: var(--sans); }
 .note button:hover { border-color: var(--ink); }
 
 /* ---------- Simple screens (join, landing, messages) */
@@ -184,8 +250,8 @@ label { font-weight: 700; font-size: 0.95rem; }
 .screen > h1 { font-size: 2rem; }
 .landing .screen > h1 { font-size: 2.6rem; margin-bottom: 0; }
 .tagline { font: italic 1.25rem/1.45 var(--serif); color: var(--muted); }
-.landing footer { margin-top: 24px; }
-.landing footer select { width: auto; }
+.settings-row { display: grid; grid-template-columns: 1fr 1fr; gap: var(--gap); margin-top: 28px; padding-top: 8px; border-top: 1px solid var(--line); }
+.settings-row .field { margin-bottom: 0; }
 .code-input { font: 600 1.7rem/1 var(--mono); letter-spacing: 0.15em; text-transform: uppercase; text-align: center; }
 .seat-list { display: flex; flex-direction: column; border-top: 1px solid var(--line); }
 .seat {
@@ -214,13 +280,16 @@ label { font-weight: 700; font-size: 0.95rem; }
   align-items: center;
   gap: var(--gap);
   padding: 10px 8px 10px 18px;
-  background: rgba(28, 22, 18, 0.94);
-  border-bottom: 3px double var(--line);
+  background: var(--bar-bg);
+  color: var(--bar-text);
+  border-bottom: var(--bar-border);
 }
 .bar .titles { flex: 1; min-width: 0; display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
 .bar h1 { font-size: 1.3rem; margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.bar .seat-name { font: italic 1rem var(--serif); color: var(--muted); }
-.bar .code { font: 0.9rem var(--mono); color: var(--muted); letter-spacing: 0.06em; }
+.bar .seat-name { font: italic 1rem var(--serif); color: var(--bar-muted); }
+.bar .code { font: 0.9rem var(--mono); color: var(--bar-muted); letter-spacing: 0.06em; }
+.bar .status, .bar button.icon { color: var(--bar-muted); }
+.bar button.icon:hover { color: var(--bar-text); }
 .status { display: inline-flex; align-items: center; gap: 6px; font-size: 0.82rem; color: var(--muted); }
 .status::before { content: ""; width: 9px; height: 9px; border-radius: 50%; background: var(--offline); }
 .status[data-state="open"]::before { background: var(--online); box-shadow: 0 0 6px var(--online); }
@@ -232,29 +301,29 @@ label { font-weight: 700; font-size: 0.95rem; }
 .feed h2.session { margin: 26px 2px 14px; }
 .item { margin-bottom: 18px; }
 /* Slips lie a little crooked, like real paper on a table. */
-.feed .item:nth-of-type(odd) { transform: rotate(-0.35deg); }
-.feed .item:nth-of-type(even) { transform: rotate(0.3deg); }
-.item.new { box-shadow: 0 0 0 2px var(--accent), 0 0 26px rgba(217, 164, 65, 0.5), 0 8px 20px rgba(0, 0, 0, 0.45); animation: candle 2.6s ease-out 1; }
-@keyframes candle { 0% { box-shadow: 0 0 0 2px var(--accent), 0 0 0 rgba(217, 164, 65, 0); } 35% { box-shadow: 0 0 0 2px var(--accent), 0 0 40px rgba(217, 164, 65, 0.75); } }
+.feed .item:nth-of-type(odd) { transform: rotate(calc(var(--note-tilt) * -1)); }
+.feed .item:nth-of-type(even) { transform: rotate(var(--note-tilt)); }
+.item.new { box-shadow: 0 0 0 2px var(--accent), 0 0 26px var(--glow); animation: arrive 2.6s ease-out 1; }
+@keyframes arrive { 0% { box-shadow: 0 0 0 2px var(--accent), 0 0 0 transparent; } 35% { box-shadow: 0 0 0 2px var(--accent), 0 0 40px var(--glow); } }
 .item .body { cursor: zoom-in; }
 .item footer { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 12px; font-family: var(--sans); }
 .item .meta { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-size: 0.85rem; }
 .tag { border: 1px solid var(--line-strong); border-radius: 2px; padding: 0 6px; font-size: 0.78rem; color: var(--muted); font-family: var(--sans); }
 .ack { min-height: 36px; padding: 4px 12px; font-size: 0.92rem; }
-.ack[aria-pressed="true"] { color: #4f6b2f; border-color: transparent; }
+.ack[aria-pressed="true"] { color: var(--done); border-color: transparent; }
 .empty { padding: 40px 6px; font: italic 1.2rem/1.5 var(--serif); color: var(--muted); }
 .empty .hint { font: 0.95rem/1.5 var(--sans); font-style: normal; }
 .new-pill {
   position: fixed; top: calc(70px + env(safe-area-inset-top)); left: 50%; transform: translateX(-50%); z-index: 6;
   background: var(--accent); color: var(--accent-ink); border: none; font-weight: 700; min-height: 36px;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
+  box-shadow: var(--shadow);
 }
 
 .images { display: grid; gap: 8px; margin-top: 12px; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
 .images[data-count="1"] { grid-template-columns: 1fr; }
-.thumb { padding: 0; border: none; background: rgba(43, 32, 24, 0.12); overflow: hidden; display: block; width: 100%; cursor: zoom-in; max-height: 60vh; border-radius: 1px; }
+.thumb { padding: 0; border: none; background: var(--shade); overflow: hidden; display: block; width: 100%; cursor: zoom-in; max-height: 60vh; border-radius: 1px; }
 .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.note .thumb { box-shadow: 0 0 0 1px rgba(43, 32, 24, 0.25); }
+.note .thumb { box-shadow: 0 0 0 1px var(--note-line); }
 
 /* ---------- Dialogs */
 
@@ -267,9 +336,9 @@ dialog {
   width: min(36rem, calc(100vw - 24px));
   max-height: calc(100dvh - 24px);
   overflow: auto;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+  box-shadow: var(--shadow);
 }
-dialog::backdrop { background: rgba(10, 6, 3, 0.7); }
+dialog::backdrop { background: var(--backdrop); }
 dialog .close { position: absolute; top: 6px; right: 6px; }
 @media (max-width: 799px) {
   dialog.sheet { margin: auto 0 0; width: 100vw; max-width: 100vw; border-radius: 10px 10px 0 0; border-bottom: none; padding-bottom: calc(18px + env(safe-area-inset-bottom)); }
@@ -287,7 +356,7 @@ dialog.reader {
   padding: calc(12px + env(safe-area-inset-top)) 22px 32px;
   background: var(--parchment); color: var(--ink);
 }
-dialog.reader button { background: transparent; color: var(--ink); border-color: rgba(43, 32, 24, 0.35); }
+dialog.reader button { background: transparent; color: var(--ink); border-color: var(--note-line); }
 .reader-text { font-family: var(--serif); font-size: calc(1rem * var(--reader-scale, 1.4)); line-height: 1.5; max-width: 40rem; margin: 16px auto 0; }
 .reader-text h2 { font: 700 1.25em/1.2 var(--serif); text-transform: none; letter-spacing: 0; color: var(--ink); display: block; margin: 0 0 0.5em; }
 .reader-text h2::after { display: none; }
@@ -299,9 +368,9 @@ dialog.reader button { background: transparent; color: var(--ink); border-color:
   display: flex; align-items: center; gap: 12px;
   background: var(--parchment); color: var(--ink); border-radius: 2px;
   font-family: var(--serif); font-size: 1.05rem;
-  padding: 10px 10px 10px 16px; max-width: calc(100vw - 24px); box-shadow: 0 8px 28px rgba(0, 0, 0, 0.55);
+  padding: 10px 10px 10px 16px; max-width: calc(100vw - 24px); box-shadow: var(--shadow), 0 0 0 1px var(--parchment-edge);
 }
-.snackbar button.link { color: #8a4b12; font: 700 1rem var(--sans); }
+.snackbar button.link { color: var(--note-link); font: 700 1rem var(--sans); }
 body.dm .snackbar { bottom: calc(72px + env(safe-area-inset-bottom)); }
 
 /* ---------- DM page: phone first, then tablet (2 columns), then desktop (3 columns) */
@@ -413,13 +482,13 @@ body[data-tab="room"] .pane.room { display: block; }
 
   body.dm .dm-panes { display: grid; grid-template-columns: minmax(320px, 380px) minmax(0, 1fr); overflow: hidden; }
   .dm-panes > .pane { overflow: auto; min-height: 0; }
-  .pane.table { display: block; border-right: 1px solid var(--line); background: rgba(0, 0, 0, 0.12); }
+  .pane.table { display: block; border-right: 1px solid var(--line); background: var(--shade); }
   body[data-tab="table"] .pane.cards { display: block; }
 }
 
 @media (min-width: 1100px) {
   body.dm .dm-panes { grid-template-columns: minmax(320px, 360px) minmax(0, 1fr) minmax(380px, 460px); }
-  .pane.detail { display: block; border-left: 1px solid var(--line); background: rgba(0, 0, 0, 0.18); position: relative; }
+  .pane.detail { display: block; border-left: 1px solid var(--line); background: var(--shade-2); position: relative; }
   .pane.detail > .close { position: absolute; top: 8px; right: 8px; }
 }
 

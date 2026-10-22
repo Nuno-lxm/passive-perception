@@ -3,8 +3,8 @@
 import { errorText, LANGUAGES, lang, setLanguage, translatePage } from './i18n.js';
 import { api } from './net.js';
 import { normalizeRoomCode } from './room-code.js';
-import { saveDmRoom } from './storage.js';
-import { $, h } from './ui.js';
+import * as storage from './storage.js';
+import { $, h, themeField } from './ui.js';
 import { t } from './i18n.js';
 
 translatePage();
@@ -13,8 +13,9 @@ const language = /** @type {HTMLSelectElement} */ ($('#language'));
 language.replaceChildren(...LANGUAGES.map((l) => h('option', { value: l.code, selected: l.code === lang }, l.name)));
 language.addEventListener('change', () => {
   setLanguage(language.value);
-  translatePage();
+  location.reload(); // also re-labels the theme picker
 });
+/** @type {HTMLElement} */ ($('#language').closest('.field')).after(themeField('theme', t('settings.theme'), (theme) => t(`theme.${theme}`), storage));
 
 $('#join').addEventListener('submit', (event) => {
   event.preventDefault();
@@ -32,6 +33,6 @@ $('#create-form').addEventListener('submit', async (event) => {
   const result = await api('/rooms', { method: 'POST', body: { name, seats } });
   button.disabled = false;
   if (!result.ok) return ($('#create-error').textContent = errorText(result.error));
-  saveDmRoom(result.data.code, { key: result.data.adminKey, name, savedLink: false });
+  storage.saveDmRoom(result.data.code, { key: result.data.adminKey, name, savedLink: false });
   location.href = `/dm#r=${result.data.code}&k=${result.data.adminKey}`;
 });

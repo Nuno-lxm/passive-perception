@@ -6,7 +6,7 @@ import { prepareImage } from './image-prep.js';
 import { api, connectRoom, imageUrl } from './net.js';
 import { formatRoomCode, normalizeRoomCode } from './room-code.js';
 import * as storage from './storage.js';
-import { $, closeButton, copyText, h, openDialog, qrSvg, screenWakeLock, snackbar } from './ui.js';
+import { $, closeButton, copyText, h, openDialog, qrSvg, screenWakeLock, snackbar, themeField } from './ui.js';
 import { openViewer } from './viewer.js';
 
 /**
@@ -29,7 +29,6 @@ const state = {
   /** @type {Seat[]} */ seats: [],
   /** @type {Map<string, Card>} */ cards: new Map(),
   /** @type {{ id: string, seatId: string, createdAt: number }[]} */ claims: [],
-  /** @type {{ n: number, startedAt: number }[]} */ sessions: [],
   tab: 'table',
   search: '',
   group: '',
@@ -102,7 +101,6 @@ function onMessage(message) {
       state.seats = message.seats;
       state.cards = new Map(message.cards.map((/** @type {Card} */ c) => [c.id, c]));
       state.claims = message.claims;
-      state.sessions = message.sessions;
       storage.saveDmRoom(state.code, { key: state.key, name: message.room.name });
       break;
     case 'room':
@@ -128,9 +126,6 @@ function onMessage(message) {
       break;
     case 'claims':
       state.claims = message.claims;
-      break;
-    case 'sessions':
-      state.sessions = message.sessions;
       break;
     case 'receipt': {
       const card = state.cards.get(message.cardId);
@@ -677,7 +672,6 @@ function roomPane() {
   lock.addEventListener('change', () => call('/room', { method: 'PATCH', body: { joinLocked: lock.checked } }));
   const seats = h('div.list');
   const newSeat = /** @type {HTMLInputElement} */ (h('input', { maxlength: 40, placeholder: t('dm.seatName'), 'aria-label': t('dm.seatName') }));
-  const session = h('p.hint');
   const awake = /** @type {HTMLInputElement} */ (h('input', { type: 'checkbox', id: 'dm-awake', checked: storage.prefs().keepAwake === true, disabled: !wake.supported }));
   awake.addEventListener('change', () => {
     storage.savePrefs({ keepAwake: awake.checked });
@@ -693,8 +687,6 @@ function roomPane() {
   listeners.add(() => {
     if (document.activeElement !== name) name.value = state.room?.name ?? '';
     lock.checked = Boolean(state.room?.joinLocked);
-    const current = state.sessions.at(-1);
-    session.textContent = current ? t('dm.currentSession', { n: current.n, when: formatWhen(current.startedAt) }) : t('dm.noSession');
     seats.replaceChildren(...state.seats.map((seat) => h('div.seat-row', null,
       h('span.dot', { dataset: { status: seat.status ?? 'offline' } }),
       h('span.name', null, seat.name, h('small', null, t(`presence.${seat.status ?? (seat.claimed ? 'offline' : 'unclaimed')}`))),
@@ -721,13 +713,6 @@ function roomPane() {
     h('div.field.check', null, lock, h('label', { for: 'lock' }, t('dm.lockJoin')), h('small', null, t('dm.lockJoinHint'))),
     h('button', { type: 'button', onclick: showJoin }, t('dm.showJoin')),
 
-    h('h2', null, t('dm.sessions')),
-    session,
-    h('button', {
-      type: 'button',
-      onclick: async () => (await call('/sessions', { method: 'POST' })).ok && snackbar(t('dm.sessionStarted')),
-    }, t('dm.newSession')),
-
     h('h2', null, t('dm.yourLink')),
     h('p.hint', null, t('dm.yourLinkHint')),
     h('div.row', null,
@@ -737,6 +722,7 @@ function roomPane() {
     h('h2', null, t('settings.title')),
     h('div.field.check', null, awake, h('label', { for: 'dm-awake' }, t('settings.keepAwake')),
       h('small', null, wake.supported ? t('settings.keepAwakeHint') : t('settings.noKeepAwake'))),
+    themeField('dm-theme', t('settings.theme'), (theme) => t(`theme.${theme}`), storage),
     h('div.field', null, h('label', { for: 'dm-language' }, t('settings.language')), language),
   );
 }

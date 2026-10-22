@@ -154,3 +154,39 @@ export function screenWakeLock() {
     },
   };
 }
+
+/**
+ * The theme picker used in every Settings screen. Saves the choice and applies it at once.
+ * @param {string} id @param {string} label @param {(theme: string) => string} optionLabel
+ * @param {{ prefs: () => { theme?: string }, savePrefs: (p: { theme: string }) => void }} storage
+ */
+export function themeField(id, label, optionLabel, storage) {
+  const current = storage.prefs().theme ?? 'candlelit';
+  const select = /** @type {HTMLSelectElement} */ (h('select', { id },
+    ...THEMES.map((theme) => h('option', { value: theme, selected: theme === current }, optionLabel(theme)))));
+  select.addEventListener('change', () => {
+    storage.savePrefs({ theme: select.value });
+    applyTheme(select.value);
+  });
+  return h('div.field', null, h('label', { for: id }, label), select);
+}
+
+/** The themes a device can pick; 'auto' follows the device's light/dark setting. */
+export const THEMES = ['candlelit', 'daylight', 'auto'];
+
+/**
+ * Switches theme now (js/theme.js applies it on page load). Saved per device.
+ * @param {string} choice  'candlelit' | 'daylight' | 'auto'
+ */
+export function applyTheme(choice) {
+  const light = matchMedia('(prefers-color-scheme: light)').matches;
+  const theme = choice === 'auto' ? (light ? 'daylight' : 'candlelit') : choice;
+  document.documentElement.dataset.theme = theme;
+  document.documentElement.dataset.themeChoice = choice;
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', theme === 'daylight' ? '#1f1f23' : '#1c1612');
+}
+
+// "Match this device" follows the device when it switches between light and dark.
+matchMedia('(prefers-color-scheme: light)').addEventListener('change', () => {
+  if (document.documentElement.dataset.themeChoice === 'auto') applyTheme('auto');
+});

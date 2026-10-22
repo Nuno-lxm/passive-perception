@@ -3,10 +3,10 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="color-scheme" content="dark">
   <meta name="theme-color" content="#1c1612">
   <title>Tabletop Whisperer</title>
   <meta name="description" content="Pass secret notes to players at the table, from the DM's phone to theirs. No app, no accounts.">
+  <script src="/js/theme.js"></script>
   <link rel="stylesheet" href="/css/app.css">
   <script type="module" src="/js/landing.js"></script>
 </head>
@@ -39,8 +39,11 @@
       <p><a href="/dm" data-i18n="dm.myRooms">My rooms</a></p>
     </section>
 
-    <footer class="hint">
-      <select id="language" data-i18n-aria-label="settings.language" aria-label="Language"></select>
+    <footer class="settings-row">
+      <div class="field">
+        <label for="language" data-i18n="settings.language">Language</label>
+        <select id="language"></select>
+      </div>
     </footer>
   </main>
 </body>

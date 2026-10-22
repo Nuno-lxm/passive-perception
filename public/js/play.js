@@ -4,7 +4,7 @@ import { errorText, formatDate, formatWhen, LANGUAGES, lang, setLanguage, t, tra
 import { api, connectRoom, forgetImages, imageUrl } from './net.js';
 import { formatRoomCode, normalizeRoomCode } from './room-code.js';
 import * as storage from './storage.js';
-import { $, closeButton, h, openDialog, screenWakeLock, snackbar } from './ui.js';
+import { $, closeButton, h, openDialog, screenWakeLock, snackbar, themeField } from './ui.js';
 import { openViewer } from './viewer.js';
 
 const app = $('#app');
@@ -400,6 +400,7 @@ function openSettings() {
     h('h2', null, t('settings.title')),
     h('div.field.check', null, awake, h('label', { for: 'awake' }, t('settings.keepAwake')),
       h('small', null, wake.supported ? t('settings.keepAwakeHint') : t('settings.noKeepAwake'))),
+    themeField('theme', t('settings.theme'), (theme) => t(`theme.${theme}`), storage),
     h('div.field', null, h('label', { for: 'language' }, t('settings.language')), language),
     h('button.danger', {
       type: 'button',

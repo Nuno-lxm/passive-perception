@@ -25,7 +25,7 @@ function write(key, value) {
 }
 
 /**
- * @typedef {{ lang?: string, keepAwake?: boolean, textSize?: number }} Prefs
+ * @typedef {{ lang?: string, keepAwake?: boolean, textSize?: number, theme?: string }} Prefs
  * @returns {Prefs}
  */
 export const prefs = () => read('prefs', {});
