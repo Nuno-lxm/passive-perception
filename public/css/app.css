@@ -332,6 +332,12 @@ label { font-weight: 700; font-size: 0.95rem; }
 .bar .code { font: 0.9rem var(--mono); color: var(--bar-muted); letter-spacing: 0.06em; }
 .bar .status, .bar button.icon { color: var(--bar-muted); }
 .bar button.icon:hover { color: var(--bar-text); }
+.icon-svg { display: block; flex: none; }
+/* The join button: just the QR icon on phones, icon + "Join" from tablet width up. */
+.join-button { background: none; border: 1px solid transparent; color: var(--bar-muted); min-width: var(--tap); padding: 6px 10px; gap: 8px; }
+.join-button:hover { color: var(--bar-text); border-color: var(--line-strong); }
+.join-button span { display: none; font-weight: 700; }
+@media (min-width: 800px) { .join-button span { display: inline; } .join-button { border-color: var(--line-strong); } }
 .status { display: inline-flex; align-items: center; gap: 6px; font-size: 0.82rem; color: var(--muted); }
 .status::before { content: ""; width: 9px; height: 9px; border-radius: 50%; background: var(--offline); }
 .status[data-state="open"]::before { background: var(--online); box-shadow: 0 0 6px var(--online); }

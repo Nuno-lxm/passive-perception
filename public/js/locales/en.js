@@ -91,6 +91,7 @@ export default {
   'dm.claim': '{name} wants to join on a new device.',
   'dm.approve': 'Approve',
   'dm.deny': 'Deny',
+  'dm.join': 'Join',
   'dm.showJoin': 'Show join code',
   'dm.joinTitle': 'Players join here',
   'dm.address': 'Address players use',

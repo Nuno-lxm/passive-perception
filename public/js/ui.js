@@ -78,6 +78,48 @@ export const closeButton = (label) =>
   }, '×');
 
 /**
+ * Small line icons drawn in the current text colour, so they follow the theme. 24×24, built with DOM calls
+ * (no innerHTML). Each shape is [tag, attributes]; `fill: true` fills it instead of outlining it.
+ * @type {Record<string, [string, Record<string, string | number | boolean>][]>}
+ */
+const ICONS = {
+  // Three finder squares and a few modules: reads as "QR code" at any size.
+  qr: [
+    ['rect', { x: 3.5, y: 3.5, width: 7, height: 7, rx: 1 }],
+    ['rect', { x: 13.5, y: 3.5, width: 7, height: 7, rx: 1 }],
+    ['rect', { x: 3.5, y: 13.5, width: 7, height: 7, rx: 1 }],
+    ['rect', { x: 6, y: 6, width: 2, height: 2, fill: true }],
+    ['rect', { x: 16, y: 6, width: 2, height: 2, fill: true }],
+    ['rect', { x: 6, y: 16, width: 2, height: 2, fill: true }],
+    ['rect', { x: 13.5, y: 13.5, width: 3, height: 3, fill: true }],
+    ['rect', { x: 17.5, y: 17.5, width: 3, height: 3, fill: true }],
+    ['rect', { x: 17.5, y: 13.5, width: 3, height: 2, fill: true }],
+    ['rect', { x: 13.5, y: 18.5, width: 2, height: 2, fill: true }],
+  ],
+};
+
+/** @param {keyof typeof ICONS} name */
+export function icon(name) {
+  const ns = 'http://www.w3.org/2000/svg';
+  const svg = document.createElementNS(ns, 'svg');
+  for (const [k, v] of Object.entries({ viewBox: '0 0 24 24', width: 22, height: 22, 'aria-hidden': 'true', class: 'icon-svg' })) {
+    svg.setAttribute(k, String(v));
+  }
+  for (const [tag, attrs] of ICONS[name]) {
+    const shape = document.createElementNS(ns, tag);
+    const { fill, ...rest } = attrs;
+    for (const [k, v] of Object.entries(rest)) shape.setAttribute(k, String(v));
+    shape.setAttribute('fill', fill ? 'currentColor' : 'none');
+    if (!fill) {
+      shape.setAttribute('stroke', 'currentColor');
+      shape.setAttribute('stroke-width', '1.8');
+    }
+    svg.append(shape);
+  }
+  return svg;
+}
+
+/**
  * A QR code as SVG, drawn from qrcode-generator's matrix (vendor/qrcode.js).
  * @param {string} text
  */
