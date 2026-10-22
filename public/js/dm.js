@@ -3,6 +3,7 @@
 import { config } from '../config.js';
 import { errorText, formatWhen, LANGUAGES, lang, setLanguage, t, translatePage } from './i18n.js';
 import { prepareImage } from './image-prep.js';
+import { parseCards } from './import-text.js';
 import { api, connectRoom, imageUrl } from './net.js';
 import { formatRoomCode, normalizeRoomCode } from './room-code.js';
 import * as storage from './storage.js';
@@ -12,7 +13,7 @@ import { openViewer } from './viewer.js';
 /**
  * @typedef {{ id: string, name: string, claimed: boolean, hasLink: boolean, lastSeenAt: number | null, status?: string }} Seat
  * @typedef {{ revealedAt: number | null, delivered: boolean, seen: boolean, acked: boolean }} Receipt
- * @typedef {{ id: string, title: string, body: string, grp: string | null, quick: boolean, sort: number,
+ * @typedef {{ id: string, title: string, body: string, grp: string | null, note: string, forSeats: string[], quick: boolean, sort: number,
  *   publicAt: number | null, createdAt: number, updatedAt: number,
  *   images: { id: string, w: number, h: number, bytes: number }[], seats: Record<string, Receipt> }} Card
  */
@@ -32,6 +33,8 @@ const state = {
   tab: 'table',
   search: '',
   group: '',
+  /** Which cards the list shows: 'all', 'unrevealed' or 'revealed'. Remembered on this device. */
+  status: storage.prefs().cardFilter ?? 'all',
   /** Seats picked in the quick-whisper box. @type {Set<string>} */ quickSeats: new Set(),
   quickEveryone: false,
 };
@@ -366,20 +369,114 @@ async function revealCard(cardId, seats, everyone) {
   return true;
 }
 
-/** One card in a list: title or text, then who has it. @param {Card} card */
-function cardRow(card) {
+/** True once anyone can see the card. @param {Card} card */
+const isRevealed = (card) => card.publicAt != null || Object.values(card.seats).some((r) => r.revealedAt != null);
+
+/**
+ * One card in a list: title or text, your note, who it's for, then who has it.
+ * @param {Card} card
+ * @param {{ view: Card[] }} [reorder]  When given, the row gets a handle to drag it within `view`.
+ */
+function cardRow(card, reorder) {
   const holders = card.publicAt != null
     ? [h('span.holder', null, t('dm.everyone'))]
     : state.seats.filter((s) => card.seats[s.id]).map((s) => h('span.holder', null, `${s.name} ${receiptIcon(card.seats[s.id])}`));
-  return h('button.card-row', { type: 'button', dataset: { id: card.id }, onclick: () => openCard(card.id) },
+  const waitingFor = card.publicAt != null ? [] : state.seats.filter((s) => card.forSeats.includes(s.id) && !card.seats[s.id]);
+  const row = h('button.card-row', { type: 'button', dataset: { id: card.id }, onclick: () => openCard(card.id) },
     h('strong', null, card.title || firstLine(card.body) || t('dm.untitled')),
     card.title && card.body && h('span.snippet', null, firstLine(card.body)),
+    card.note && h('span.dm-note-line', null, icon('note', 14), h('span', null, firstLine(card.note))),
     h('span.meta', null,
       card.images.length > 0 && h('span.count', { 'aria-label': t('dm.imageCount', { count: card.images.length }) },
         icon('image', 16), String(card.images.length)),
       card.grp && h('span.tag', null, card.grp),
-      card.quick && h('span.tag', null, t('dm.quick'))),
+      card.quick && h('span.tag', null, t('dm.quick')),
+      waitingFor.length > 0 && h('span.for-names', null, t('dm.forNames', { names: waitingFor.map((s) => s.name).join(', ') }))),
     holders.length > 0 && h('span.holders', null, ...holders));
+  if (!reorder) return row;
+  const grip = h('button.grip', {
+    type: 'button',
+    'aria-label': t('dm.moveCard', { title: card.title || t('dm.untitled') }),
+    title: t('dm.moveHint'),
+    dataset: { id: card.id },
+  }, icon('grip', 18));
+  const item = h('div.card-item', { dataset: { id: card.id } }, grip, row);
+  grip.addEventListener('pointerdown', (event) => dragCard(/** @type {PointerEvent} */ (event), item, reorder.view));
+  grip.addEventListener('keydown', (event) => {
+    const index = reorder.view.findIndex((c) => c.id === card.id);
+    if (event.key === 'ArrowUp' && index > 0) moveCard(reorder.view, index, index - 1);
+    else if (event.key === 'ArrowDown' && index < reorder.view.length - 1) moveCard(reorder.view, index, index + 1);
+    else return;
+    event.preventDefault();
+  });
+  return item;
+}
+
+/**
+ * Drag a card by its handle. The others slide out of the way; on release the card gets a sort value between
+ * its new neighbours (only that one card changes on the server).
+ * @param {PointerEvent} event @param {HTMLElement} item @param {Card[]} view
+ */
+function dragCard(event, item, view) {
+  event.preventDefault();
+  const grip = /** @type {HTMLElement} */ (event.currentTarget);
+  grip.setPointerCapture(event.pointerId);
+  const items = /** @type {HTMLElement[]} */ ([...(item.parentElement?.querySelectorAll(':scope > .card-item') ?? [])]);
+  const rects = items.map((el) => el.getBoundingClientRect());
+  const from = items.indexOf(item);
+  const height = rects[from].height;
+  const startY = event.clientY;
+  let to = from;
+  item.classList.add('dragging');
+
+  const move = (/** @type {PointerEvent} */ e) => {
+    const dy = e.clientY - startY;
+    item.style.transform = `translateY(${dy}px)`;
+    const centre = rects[from].top + height / 2 + dy;
+    to = from;
+    rects.forEach((rect, i) => {
+      const middle = rect.top + rect.height / 2;
+      if (i < from && centre < middle) to = Math.min(to, i);
+      if (i > from && centre > middle) to = Math.max(to, i);
+    });
+    items.forEach((el, i) => {
+      if (el === item) return;
+      const shift = from < to && i > from && i <= to ? -height : from > to && i >= to && i < from ? height : 0;
+      el.style.transform = shift ? `translateY(${shift}px)` : '';
+    });
+  };
+  const end = () => {
+    grip.removeEventListener('pointermove', move);
+    grip.removeEventListener('pointerup', end);
+    grip.removeEventListener('pointercancel', end);
+    for (const el of items) el.style.transform = '';
+    item.classList.remove('dragging');
+    if (to !== from) moveCard(view, from, to);
+  };
+  grip.addEventListener('pointermove', move);
+  grip.addEventListener('pointerup', end);
+  grip.addEventListener('pointercancel', end);
+}
+
+/**
+ * Moves view[from] to position `to`, giving it a sort value between its new neighbours.
+ * @param {Card[]} view @param {number} from @param {number} to
+ */
+async function moveCard(view, from, to) {
+  const order = view.slice();
+  const [card] = order.splice(from, 1);
+  order.splice(to, 0, card);
+  const before = order[to - 1];
+  const after = order[to + 1];
+  const sort = before && after ? (before.sort + after.sort) / 2 : before ? before.sort + 1 : after.sort - 1;
+  const previous = card.sort;
+  card.sort = sort; // move it now; the server's answer confirms it
+  changed(); // the list redraw keeps focus on this card's handle
+  const result = await call(`/cards/${card.id}`, { method: 'PATCH', body: { sort } });
+  if (!result.ok) {
+    card.sort = previous;
+    changed();
+  }
 }
 
 /** @param {string} text */
@@ -393,29 +490,137 @@ function cardsPane() {
     state.search = search.value.trim().toLocaleLowerCase();
     changed();
   });
-  const group = /** @type {HTMLSelectElement} */ (h('select', { 'aria-label': t('dm.group') }));
-  group.addEventListener('change', () => {
-    state.group = group.value;
-    changed();
-  });
+  const groupBar = h('div.group-bar', { role: 'tablist', 'aria-label': t('dm.groups') });
+  const statusBar = h('div.segmented', { role: 'radiogroup', 'aria-label': t('dm.show') },
+    ...['unrevealed', 'revealed', 'all'].map((status) => h('button', {
+      type: 'button',
+      role: 'radio',
+      dataset: { status },
+      onclick: () => {
+        state.status = status;
+        storage.savePrefs({ cardFilter: status });
+        changed();
+      },
+    }, t(`dm.filter.${status}`))));
   const list = h('div.list');
 
   listeners.add(() => {
-    const groups = [...new Set([...state.cards.values()].map((c) => c.grp).filter(Boolean))].sort();
-    group.replaceChildren(
-      h('option', { value: '' }, t('dm.allGroups')),
-      h('option', { value: '__quick', selected: state.group === '__quick' }, t('dm.quickGroup')),
-      ...groups.map((g) => h('option', { value: g, selected: state.group === g }, g)));
-    const cards = [...state.cards.values()]
-      .filter((c) => !state.group || (state.group === '__quick' ? c.quick : c.grp === state.group))
-      .filter((c) => !state.search || `${c.title}\n${c.body}\n${c.grp ?? ''}`.toLocaleLowerCase().includes(state.search))
+    const all = [...state.cards.values()];
+    const groups = [...new Set(all.map((c) => c.grp).filter((g) => g != null))].sort((a, b) => String(a).localeCompare(String(b)));
+    if (state.group && state.group !== '__quick' && state.group !== '__none' && !groups.includes(state.group)) state.group = '';
+    /** @type {[string, string][]} */
+    const tabs = [['', t('dm.filter.all')], ...groups.map((g) => /** @type {[string, string]} */ ([String(g), String(g)]))];
+    if (all.some((c) => c.grp == null && !c.quick)) tabs.push(['__none', t('dm.noGroup')]);
+    if (all.some((c) => c.quick)) tabs.push(['__quick', t('dm.quickGroup')]);
+    groupBar.replaceChildren(...tabs.map(([value, label]) => h('button', {
+      type: 'button',
+      role: 'tab',
+      'aria-selected': String(state.group === value),
+      onclick: () => {
+        state.group = value;
+        changed();
+      },
+    }, label)));
+    for (const button of statusBar.children) {
+      button.setAttribute('aria-checked', String(/** @type {HTMLElement} */ (button).dataset.status === state.status));
+    }
+
+    const view = all
+      .filter((c) => !state.group || (state.group === '__quick' ? c.quick : state.group === '__none' ? c.grp == null && !c.quick : c.grp === state.group))
+      .filter((c) => state.status === 'all' || (state.status === 'revealed') === isRevealed(c))
+      .filter((c) => !state.search || `${c.title}\n${c.body}\n${c.grp ?? ''}\n${c.note}`.toLocaleLowerCase().includes(state.search))
       .sort((a, b) => a.sort - b.sort);
-    list.replaceChildren(...(cards.length ? cards.map(cardRow) : [h('p.hint', null, state.cards.size ? t('dm.noMatches') : t('dm.noCards'))]));
+    // Dragging only makes sense in the plain list, not in search results.
+    const reorder = state.search ? undefined : { view };
+    // Redrawing replaces the rows, so keep keyboard focus on the same card's handle or row.
+    const focused = /** @type {HTMLElement | null} */ (document.activeElement);
+    const keep = list.contains(focused) && focused?.dataset.id ? { id: focused.dataset.id, grip: focused.classList.contains('grip') } : null;
+    list.replaceChildren(...(view.length
+      ? view.map((card) => cardRow(card, reorder))
+      : [h('p.hint', null, state.cards.size ? t('dm.noMatches') : t('dm.noCards'))]));
+    if (keep) /** @type {HTMLElement | null} */ (list.querySelector(`${keep.grip ? '.grip' : '.card-row'}[data-id="${CSS.escape(keep.id)}"]`))?.focus();
   });
 
   return h('section.pane.cards', null,
-    h('div.toolbar', null, search, group, h('button.primary', { type: 'button', onclick: () => editCard(null) }, t('dm.newCard'))),
+    h('div.toolbar', null,
+      search,
+      h('button', { type: 'button', onclick: importCardsDialog }, t('dm.import')),
+      h('button.primary', { type: 'button', onclick: () => editCard(null) }, t('dm.newCard'))),
+    groupBar,
+    statusBar,
     list);
+}
+
+/** Paste prep notes or pick a .txt/.md file; preview; then create all the cards at once. */
+function importCardsDialog() {
+  const text = /** @type {HTMLTextAreaElement} */ (h('textarea', {
+    id: 'import-text', rows: 12, spellcheck: false, placeholder: t('dm.importExample'),
+  }));
+  const file = /** @type {HTMLInputElement} */ (h('input', { type: 'file', id: 'import-file', accept: '.txt,.md,.markdown,text/plain,text/markdown' }));
+  const preview = h('div.import-preview', { role: 'status', 'aria-live': 'polite' });
+  const go = /** @type {HTMLButtonElement} */ (h('button.primary', { type: 'button', disabled: true }, t('dm.importButton', { count: 0 })));
+  /** @type {ReturnType<typeof parseCards> | null} */
+  let parsed = null;
+
+  const update = () => {
+    parsed = text.value.trim() ? parseCards(text.value, state.seats) : null;
+    if (!parsed) {
+      preview.replaceChildren();
+      go.disabled = true;
+      go.textContent = t('dm.importButton', { count: 0 });
+      return;
+    }
+    const groups = new Set(parsed.cards.map((c) => c.grp ?? ''));
+    const describe = (/** @type {import('./import-text.js').ImportWarning} */ w) =>
+      t(`import.${w.code}`, { card: w.card ?? '', value: w.value ?? '' });
+    preview.replaceChildren(...[
+      parsed.errors.length > 0 && h('ul.import-errors', null, ...parsed.errors.map((e) => h('li', null, describe(e)))),
+      parsed.cards.length > 0 && h('p', null,
+        h('strong', null, t('dm.importCount', { count: parsed.cards.length })), ' ', t('dm.importGroups', { count: groups.size })),
+      parsed.warnings.length > 0 && h('ul.import-warnings', null, ...parsed.warnings.map((w) => h('li', null, describe(w)))),
+      parsed.cards.length > 0 && h('ol.import-list', null,
+        ...parsed.cards.slice(0, 8).map((c) => h('li', null,
+          c.grp && h('span.tag', null, c.grp), ' ', c.title || firstLine(c.body) || t('dm.untitled'))),
+        parsed.cards.length > 8 && h('li.more', null, t('dm.importMore', { count: parsed.cards.length - 8 }))),
+    ].filter((x) => x instanceof Node));
+    go.disabled = parsed.errors.length > 0;
+    go.textContent = t('dm.importButton', { count: parsed.cards.length });
+  };
+  text.addEventListener('input', update);
+  file.addEventListener('change', async () => {
+    const picked = file.files?.[0];
+    if (!picked) return;
+    text.value = await picked.text();
+    update();
+  });
+  go.addEventListener('click', async () => {
+    if (!parsed || parsed.errors.length) return;
+    go.disabled = true;
+    const result = await call('/cards/bulk', {
+      method: 'POST',
+      body: { cards: parsed.cards.map(({ title, body, grp, note, forSeats }) => ({ title, body, grp, note, forSeats })) },
+    });
+    go.disabled = false;
+    if (!result.ok) return;
+    snackbar(t('dm.imported', { count: result.data.imported }));
+    state.group = '';
+    dialog.close();
+  });
+
+  const dialog = openDialog([
+    closeButton(t('common.close')),
+    h('h2', null, t('dm.importTitle')),
+    h('p', null, t('dm.importHint')),
+    h('details.import-format', null,
+      h('summary', null, t('dm.importFormat')),
+      h('pre', null, t('dm.importExample')),
+      h('p.hint', null, t('dm.importFormatHint'))),
+    h('label', { for: 'import-file' }, t('dm.importFile')), file,
+    h('label', { for: 'import-text' }, t('dm.importText')), text,
+    preview,
+    h('div.dialog-footer', null, go),
+  ], { className: 'editor' });
+  text.focus();
 }
 
 /** What the open card's keyboard shortcuts act on. @type {{ toggleSeat: (i: number) => void, toggleEveryone: () => void, reveal: () => void } | null} */
@@ -429,8 +634,10 @@ let closeDetail = null;
  * @param {string} cardId
  */
 function openCard(cardId) {
+  // The players this card is usually for start out picked, unless they already have it.
+  const initial = state.cards.get(cardId);
   /** @type {Set<string>} */
-  const selected = new Set();
+  const selected = new Set(initial && initial.publicAt == null ? initial.forSeats.filter((id) => !initial.seats[id]) : []);
   let everyone = false;
   const content = h('div.sheet-content');
   /** @type {HTMLDialogElement | null} */
@@ -479,6 +686,9 @@ function openCard(cardId) {
         card.images.length > 0 && h('div.images', { dataset: { count: String(card.images.length) } },
           ...card.images.map((image) => dmThumb(image, card.title))),
         !card.title && !card.body && !card.images.length && h('p.hint', null, t('dm.untitled'))),
+      card.note && h('aside.dm-note-box', null,
+        h('span.label', null, icon('note', 14), t('dm.onlyYou')),
+        h('p', null, card.note)),
       h('h3', null, t('dm.whoGetsIt')),
       h('div.chips', null, ...seatChips(selected, () => everyone, (v) => (everyone = v), render, card)),
       reveal,
@@ -492,6 +702,16 @@ function openCard(cardId) {
           h('button.link', { type: 'button', onclick: () => takeBack(card, [seat.id], false) }, t('dm.takeBack'))))),
       h('div.row.actions', null,
         h('button', { type: 'button', onclick: () => { if (dialog) dialog.close(); editCard(card.id); } }, t('dm.edit')),
+        h('button', {
+          type: 'button',
+          onclick: async () => {
+            const result = await call(`/cards/${card.id}/duplicate`, { method: 'POST' });
+            if (!result.ok) return;
+            snackbar(t('dm.duplicated'));
+            if (dialog) dialog.close();
+            openCard(result.data.card.id);
+          },
+        }, t('dm.duplicate')),
         h('button.danger', {
           type: 'button',
           onclick: async () => {
@@ -624,6 +844,21 @@ function editCard(cardId) {
       }, '×'));
     return wrap;
   }));
+  /** @type {Set<string>} */
+  const usuallyFor = new Set(card?.forSeats ?? []);
+  const forChips = h('div.chips', { role: 'group', 'aria-labelledby': 'card-for-label' });
+  const drawForChips = () => forChips.replaceChildren(...state.seats.map((seat) => h('button.chip', {
+    type: 'button',
+    'aria-pressed': String(usuallyFor.has(seat.id)),
+    onclick: () => {
+      if (usuallyFor.has(seat.id)) usuallyFor.delete(seat.id);
+      else usuallyFor.add(seat.id);
+      drawForChips();
+    },
+  }, seat.name)));
+  drawForChips();
+  const note = /** @type {HTMLTextAreaElement} */ (h('textarea', { id: 'card-note', rows: 2, maxlength: 1000, placeholder: t('dm.noteHint') }));
+  note.value = card?.note ?? '';
   const files = /** @type {HTMLInputElement} */ (h('input', { type: 'file', id: 'card-images', accept: 'image/*', multiple: true }));
   const progress = h('p.hint', { role: 'status' });
   const save = /** @type {HTMLButtonElement} */ (h('button.primary', { type: 'submit' }, t('common.save')));
@@ -633,7 +868,7 @@ function editCard(cardId) {
       event.preventDefault();
       save.disabled = true;
       try {
-        const fields = { title: title.value, body: body.value, grp: group.value };
+        const fields = { title: title.value, body: body.value, grp: group.value, note: note.value, forSeats: [...usuallyFor] };
         const result = card
           ? await call(`/cards/${card.id}`, { method: 'PATCH', body: fields })
           : await call('/cards', { method: 'POST', body: fields });
@@ -658,6 +893,9 @@ function editCard(cardId) {
   h('label', { for: 'card-group' }, t('dm.group')), group,
   h('datalist', { id: 'groups' }, ...groups.map((g) => h('option', { value: g }))),
   h('p.hint', null, t('dm.groupHint')),
+  h('span.label-like', { id: 'card-for-label' }, t('dm.usuallyFor')), forChips,
+  h('p.hint', null, t('dm.usuallyForHint')),
+  h('label', { for: 'card-note' }, t('dm.note')), note,
   existing,
   h('label', { for: 'card-images' }, t('dm.images')), files,
   h('p.hint', null, t('dm.imagesHint')),
