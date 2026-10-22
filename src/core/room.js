@@ -80,7 +80,6 @@ export class Room {
 
       if (method === 'PATCH' && pathname === '/room') return this.patchRoom(body);
       if (method === 'POST' && pathname === '/rotate-key') return await this.rotateKey();
-      if (method === 'POST' && pathname === '/sessions') return this.newSession();
       if (method === 'POST' && pathname === '/seats') return this.addSeat(body);
       if ((m = pathname.match(/^\/seats\/([^/]+)$/))) {
         if (method === 'PATCH') return this.renameSeat(m[1], body);
@@ -189,12 +188,6 @@ export class Room {
     this.setMeta('admin_hash', await sha256(adminKey));
     for (const conn of this.conns('dm')) this.signOutConn(conn, 'key_rotated');
     return json({ adminKey });
-  }
-
-  newSession() {
-    const n = this.startSession(this.store.now());
-    this.toDms({ t: 'sessions', sessions: this.sessions() });
-    return json({ session: n });
   }
 
   // ---------- Seats

@@ -182,7 +182,7 @@ CREATE TABLE sessions (n INTEGER PRIMARY KEY, started_at INTEGER);
 - **Secrets are stored hashed.** The DM key, seat tokens and personal-link secrets are 128-bit random values, stored as SHA-256 hashes.
   Their randomness makes a slow password hash unnecessary, and a dump of the database contains no usable keys.
 - **"Everyone"** is `public_at` on the card. It includes players who join later.
-- **Sessions number themselves.** The first reveal after 6 or more hours without one starts session *n+1*. The DM can also tap *New session*.
+- **Sessions number themselves.** The first reveal after 6 or more hours without one starts session *n+1*. There's no manual button (dropped: the rule covers real play).
 - **`content_at`** changes only when what players see changes (title, body, images). Their feed shows *edited* when `content_at` is later than the time it was revealed to them.
 - **An image row** holds the full image (≤ 1.5 MB) and a thumbnail (≤ 150 KB), under the 2 MB SQLite row limit.
   Image ids never change, so clients can cache images forever.
@@ -407,7 +407,7 @@ A DM uses roughly 50–150 requests per session, which fits easily in the budget
 
 ### Both sides
 
-- **Dark theme by default** (less glow at a dim table), with a light theme. System font, body ≥ 17 px, tap targets ≥ 44 px.
+- **Two themes, picked per device in Settings** (and on the landing page): **Candlelit** (default; dark and warm, umber wood, parchment notes, candle amber, self-hosted Alegreya) and **Daylight** (light and plain: grey page, white cards, crimson accent, dark top bar, the device's own sans-serif), or *Match device*. `js/theme.js` applies the choice in `<head>` before the page paints. Every colour is a CSS variable, so a theme is one block of values. Body ≥ 17 px, tap targets ≥ 44 px.
 - Respects `safe-area-inset-*` and uses `100dvh`. `overscroll-behavior: contain` stops a swipe from reloading the page by accident.
   Pinch-zoom is never disabled.
 - Respects `prefers-reduced-motion`.
