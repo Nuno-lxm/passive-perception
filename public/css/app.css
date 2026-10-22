@@ -400,7 +400,8 @@ body.dm .tabs { grid-area: tabs; }
 .pane { display: none; padding: 8px 18px 28px; }
 body[data-tab="table"] .pane.table,
 body[data-tab="cards"] .pane.cards,
-body[data-tab="room"] .pane.room { display: block; }
+body[data-tab="room"] .pane.room,
+body[data-tab="settings"] .pane.settings { display: block; }
 .pane.detail { display: none; }
 .pane > :first-child { margin-top: 0.8em; }
 

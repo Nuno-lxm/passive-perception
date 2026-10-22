@@ -186,7 +186,7 @@ function buildShell() {
   const code = h('span.code');
   const claims = h('div.claims');
   const tabs = h('nav.tabs', { role: 'tablist' },
-    ...['table', 'cards', 'room'].map((tab) => h(`button.tab-${tab}`, {
+    ...['table', 'cards', 'room', 'settings'].map((tab) => h(`button.tab-${tab}`, {
       type: 'button', role: 'tab', dataset: { tab }, onclick: () => setTab(tab),
     }, t(`dm.tab.${tab}`))));
 
@@ -196,7 +196,7 @@ function buildShell() {
       h('span.status', { role: 'status' }),
       h('button.icon', { type: 'button', 'aria-label': t('dm.showJoin'), onclick: showJoin }, '▦')),
     claims,
-    h('main.dm-panes', null, tablePane(), cardsPane(), roomPane(), detailPane()),
+    h('main.dm-panes', null, tablePane(), cardsPane(), roomPane(), settingsPane(), detailPane()),
     tabs,
   );
   setTab(state.tab);
@@ -672,17 +672,6 @@ function roomPane() {
   lock.addEventListener('change', () => call('/room', { method: 'PATCH', body: { joinLocked: lock.checked } }));
   const seats = h('div.list');
   const newSeat = /** @type {HTMLInputElement} */ (h('input', { maxlength: 40, placeholder: t('dm.seatName'), 'aria-label': t('dm.seatName') }));
-  const awake = /** @type {HTMLInputElement} */ (h('input', { type: 'checkbox', id: 'dm-awake', checked: storage.prefs().keepAwake === true, disabled: !wake.supported }));
-  awake.addEventListener('change', () => {
-    storage.savePrefs({ keepAwake: awake.checked });
-    wake.set(awake.checked);
-  });
-  const language = /** @type {HTMLSelectElement} */ (h('select', { id: 'dm-language' },
-    ...LANGUAGES.map((l) => h('option', { value: l.code, selected: l.code === lang }, l.name))));
-  language.addEventListener('change', () => {
-    setLanguage(language.value);
-    location.reload();
-  });
 
   listeners.add(() => {
     if (document.activeElement !== name) name.value = state.room?.name ?? '';
@@ -718,8 +707,25 @@ function roomPane() {
     h('div.row', null,
       h('button', { type: 'button', onclick: () => showSaveLink(false) }, t('dm.showLink')),
       h('button.danger', { type: 'button', onclick: resetKey }, t('dm.resetLink'))),
+  );
+}
 
-    h('h2', null, t('settings.title')),
+/** This device's preferences (not the room's): keep screen on, theme, language. */
+function settingsPane() {
+  const awake = /** @type {HTMLInputElement} */ (h('input', { type: 'checkbox', id: 'dm-awake', checked: storage.prefs().keepAwake === true, disabled: !wake.supported }));
+  awake.addEventListener('change', () => {
+    storage.savePrefs({ keepAwake: awake.checked });
+    wake.set(awake.checked);
+  });
+  const language = /** @type {HTMLSelectElement} */ (h('select', { id: 'dm-language' },
+    ...LANGUAGES.map((l) => h('option', { value: l.code, selected: l.code === lang }, l.name))));
+  language.addEventListener('change', () => {
+    setLanguage(language.value);
+    location.reload();
+  });
+
+  return h('section.pane.settings', null,
+    h('h2', null, t('dm.thisDevice')),
     h('div.field.check', null, awake, h('label', { for: 'dm-awake' }, t('settings.keepAwake')),
       h('small', null, wake.supported ? t('settings.keepAwakeHint') : t('settings.noKeepAwake'))),
     themeField('dm-theme', t('settings.theme'), (theme) => t(`theme.${theme}`), storage),
