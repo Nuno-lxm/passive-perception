@@ -12,6 +12,7 @@ const DYNAMIC = {
   'signedOut.': ['moved', 'released', 'removed', 'left', 'other', 'roomDeleted'],
   'theme.': ['candlelit', 'light', 'dark', 'auto'],
   'dm.filter.': ['all', 'unrevealed', 'revealed'],
+  'report.reason.': ['illegal', 'abuse', 'child', 'other'],
   'import.': ['noCards', 'bodyTooLong', 'noteTooLong', 'tooMany', 'unknownPlayer', 'strayText', 'titleShortened', 'groupShortened'],
 };
 

@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#1c1612">
+  <meta name="robots" content="noindex">
+  <title>Admin · Tabletop Whisperer</title>
+  <script src="/js/theme.js"></script>
+  <link rel="stylesheet" href="/css/app.css">
+  <script type="module" src="/js/admin.js"></script>
+</head>
+<body class="landing">
+  <main class="screen admin">
+    <h1>Reports</h1>
+    <p class="hint">For whoever runs this service. Reports are kept until you close them, then 90 days.</p>
+    <form id="login" class="row" hidden>
+      <input id="token" type="password" autocomplete="current-password" placeholder="ADMIN_TOKEN" aria-label="Admin token">
+      <button type="submit" class="primary">Open</button>
+    </form>
+    <p id="admin-error" class="error" role="alert"></p>
+    <div id="reports" class="stack"></div>
+  </main>
+</body>
+</html>

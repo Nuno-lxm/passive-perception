@@ -10,6 +10,7 @@ import { WebSocketServer } from 'ws';
 import { handleApi } from '../core/api.js';
 import { normalizeRoomCode } from '../core/ids.js';
 import { Room } from '../core/room.js';
+import { Admin } from '../core/admin.js';
 import { openStore } from './adapter.js';
 import { findAsset, readHeadersFile } from './static.js';
 
@@ -19,13 +20,14 @@ const HEARTBEAT = 30 * 1000; // drop sockets whose phone vanished without closin
 const EXPIRY_SWEEP = 60 * 60 * 1000; // check for rooms unused for ROOM_EXPIRY_DAYS once an hour
 
 /** Simple in-memory rate limits, per client IP: [requests, window in ms]. */
-const RATE_LIMITS = { create: [5, 60 * 60 * 1000], join: [20, 60 * 1000] };
+const RATE_LIMITS = { create: [5, 60 * 60 * 1000], join: [20, 60 * 1000], report: [10, 60 * 60 * 1000] };
 
 /**
- * @param {{ dataDir: string, port: number, host?: string, expiryDays?: number }} options
+ * @param {{ dataDir: string, port: number, host?: string, expiryDays?: number, adminToken?: string }} options
  *   expiryDays: delete rooms unused this long (0 = keep forever). Default 60, like the hosted version.
+ *   adminToken: turns on content reports and the /admin page (for a public self-hosted server).
  */
-export function startServer({ dataDir, port, host = '0.0.0.0', expiryDays = 60 }) {
+export function startServer({ dataDir, port, host = '0.0.0.0', expiryDays = 60, adminToken }) {
   const roomsDir = join(dataDir, 'rooms');
   mkdirSync(roomsDir, { recursive: true });
   const securityHeaders = readHeadersFile(join(PUBLIC_DIR, '_headers'));
@@ -60,8 +62,12 @@ export function startServer({ dataDir, port, host = '0.0.0.0', expiryDays = 60 }
   /** @type {Map<string, { count: number, resetAt: number }>} */
   const counters = new Map();
 
+  const admin = adminToken ? new Admin(openStore(join(dataDir, 'admin.sqlite'))) : null;
+
   /** @type {import('../core/api.js').Host} */
   const apiHost = {
+    admin: admin ? () => ({ fetch: (request) => admin.handle(request) }) : undefined,
+    adminToken,
     room(code, { create }) {
       const entry = openRoom(code, create);
       return entry && { fetch: (request) => entry.room.handle(request) };
@@ -96,7 +102,7 @@ export function startServer({ dataDir, port, host = '0.0.0.0', expiryDays = 60 }
         request.headers.set('x-client-ip', req.socket.remoteAddress ?? '');
         response = await handleApi(request, apiHost);
       } else if (url.pathname === '/config.js') {
-        response = configScript(port);
+        response = configScript(port, Boolean(adminToken));
       } else {
         const asset = await findAsset(PUBLIC_DIR, decodeURIComponent(url.pathname));
         const notFound = asset ? null : await findAsset(PUBLIC_DIR, '/404.html');
@@ -223,9 +229,9 @@ export function lanUrls(/** @type {number} */ port) {
  * Replaces public/config.js: tells the client it runs self-hosted and where players can reach it.
  * PUBLIC_URL overrides the detected addresses; inside Docker they are the container's, not the machine's.
  */
-function configScript(/** @type {number} */ port) {
+function configScript(/** @type {number} */ port, /** @type {boolean} */ reports) {
   const publicUrl = process.env.PUBLIC_URL?.replace(/\/+$/, '');
-  const config = { mode: 'local', lanUrls: publicUrl ? [publicUrl] : lanUrls(port) };
+  const config = { mode: 'local', lanUrls: publicUrl ? [publicUrl] : lanUrls(port), reports };
   return new Response(`export const config = ${JSON.stringify(config)};\n`, {
     headers: { 'content-type': 'text/javascript; charset=utf-8', 'cache-control': 'no-store' },
   });
@@ -235,7 +241,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const port = Number(process.env.PORT ?? 8080);
   const dataDir = resolve(process.env.DATA_DIR ?? 'data');
   const expiryDays = Number(process.env.ROOM_EXPIRY_DAYS ?? 60);
-  startServer({ dataDir, port, expiryDays });
+  startServer({ dataDir, port, expiryDays, adminToken: process.env.ADMIN_TOKEN || undefined });
   console.log(`Tabletop Whisperer on http://localhost:${port}  (data: ${dataDir})`);
   if (process.env.PUBLIC_URL) console.log(`  players join at: ${process.env.PUBLIC_URL}`);
   else if (existsSync('/.dockerenv')) {

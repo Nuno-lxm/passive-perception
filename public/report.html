@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#1c1612">
+  <title>Report a problem · Tabletop Whisperer</title>
+  <script src="/js/theme.js"></script>
+  <link rel="stylesheet" href="/css/app.css">
+  <script type="module" src="/js/report.js"></script>
+</head>
+<body class="landing">
+  <main class="screen">
+    <p><a href="/" data-i18n="privacy.back">← Tabletop Whisperer</a></p>
+    <h1 data-i18n="reportPage.title">Report a problem</h1>
+    <p data-i18n="reportPage.intro">Saw something illegal or abusive that was shared through Tabletop Whisperer? Tell the people who run it. If you're a player, the Report link on the whisper itself is quickest.</p>
+    <form id="report-form" class="stack">
+      <label for="reason" data-i18n="reportPage.reason">What kind of problem?</label>
+      <select id="reason">
+        <option value="illegal" data-i18n="report.reason.illegal">Illegal content</option>
+        <option value="abuse" data-i18n="report.reason.abuse">Harassment, hate or threats</option>
+        <option value="child" data-i18n="report.reason.child">Sexual content involving a minor</option>
+        <option value="other" data-i18n="report.reason.other">Something else</option>
+      </select>
+      <label for="room" data-i18n="reportPage.room">Room code, if you know it</label>
+      <input id="room" autocomplete="off" autocapitalize="characters" maxlength="7" placeholder="K7Q-F2M">
+      <label for="note" data-i18n="reportPage.what">What happened?</label>
+      <textarea id="note" rows="5" maxlength="2000" required></textarea>
+      <label for="contact" data-i18n="reportPage.contact">Your email (optional)</label>
+      <input id="contact" type="email" maxlength="200" autocomplete="email">
+      <p class="hint" data-i18n="reportPage.contactHint">Only if you'd like an answer. It's kept with the report and deleted with it.</p>
+      <p id="report-error" class="error" role="alert"></p>
+      <button type="submit" class="primary" data-i18n="report.send">Send report</button>
+    </form>
+    <p id="report-done" class="notice" hidden data-i18n="reportPage.sent">Thanks. Your report was sent to the people who run this service.</p>
+    <p id="report-off" hidden data-i18n="reportPage.off">Reporting isn't set up on this copy of Tabletop Whisperer. Contact whoever runs it.</p>
+  </main>
+</body>
+</html>

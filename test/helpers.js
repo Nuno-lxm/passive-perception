@@ -1,12 +1,16 @@
 // Shared test setup: rooms on in-memory node:sqlite, the same engine family as the Durable Objects.
 import { Room } from '../src/core/room.js';
+import { Admin } from '../src/core/admin.js';
 import { openStore } from '../src/node/adapter.js';
 
-/** A Host for the API router that keeps every room in memory. */
-export function memoryHost() {
+/** A Host for the API router that keeps every room in memory. Pass an adminToken to turn on reports. */
+export function memoryHost({ adminToken } = {}) {
   const rooms = new Map();
+  const admin = adminToken ? new Admin(openStore(':memory:')) : null;
   return {
     rooms,
+    adminToken,
+    admin: admin ? () => ({ fetch: (request) => admin.handle(request) }) : undefined,
     room(code, { create }) {
       if (!rooms.has(code)) {
         if (!create) return null;

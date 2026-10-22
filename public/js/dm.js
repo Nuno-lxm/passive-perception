@@ -221,7 +221,8 @@ function buildShell() {
     title.textContent = state.room?.name ?? '';
     code.textContent = formatRoomCode(state.code);
     document.title = `${state.room?.name ?? ''} · Whisperer`;
-    claims.replaceChildren(...state.claims.map((claim) => {
+    const frozenBanner = /** @type {any} */ (state.room)?.frozen ? [h('div.claim.frozen', { role: 'status' }, h('span', null, t('error.room_frozen')))] : [];
+    claims.replaceChildren(...frozenBanner, ...state.claims.map((claim) => {
       const seat = state.seats.find((s) => s.id === claim.seatId);
       return h('div.claim', { role: 'alert' },
         h('span', null, t('dm.claim', { name: seat?.name ?? '?' })),

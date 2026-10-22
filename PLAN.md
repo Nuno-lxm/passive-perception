@@ -528,7 +528,7 @@ Asked for after the first table test, to make reveals quicker mid-game:
     *Keep who has what* (moving hosts or restoring a backup) or *Start fresh* (run the same prep for another group).
     Seats come in unclaimed, so players join again. Same validation as normal input; images are re-checked.
   - The expiry note on the DM screen links to *Export campaign*. Files move between hosted and self-hosted versions.
-- Report button + public report form + `/admin` (freeze / delete) + aggregate counters.
+- ✅ Report button on each whisper + public form (`/report`) + `/admin` (read reports with a snapshot of the card, freeze / unfreeze / delete the room, close / delete reports). Reports live in one `AdminDO` (Node: `data/admin.sqlite`); `/api/admin/*` needs `ADMIN_TOKEN` (a wrangler secret; on Node an env var, which also turns reporting on). Operator routes in a room need both the router's path check and a marker header only the admin router sets. Closed reports are deleted after 90 days. Aggregate counters: with the limits step.
 - All rate limits and caps, global storage tally, over-the-limit banners (tested by forcing errors).
 - Web Analytics on the landing and privacy pages.
 - GitHub Action building the multi-arch Docker image; *Deploy to Cloudflare* button; README.
