@@ -15,6 +15,7 @@ import { dmCards } from './dmview.js';
 import { IMAGE_LIMITS, checkImage } from './images.js';
 
 const HOUR = 60 * 60 * 1000;
+const DAY = 24 * HOUR;
 const SESSION_GAP = 6 * HOUR; // the first reveal after this long starts a new session
 const CLAIM_TTL = 10 * 60 * 1000;
 const MAX_PENDING_CLAIMS = 20;
@@ -22,6 +23,13 @@ const PONG_STALE = 45 * 1000;
 const MAX_MESSAGE = 4096;
 
 /** @typedef {import('./sockets.js').Conn} Conn */
+/**
+ * What else the host does for a room.
+ * @typedef {object} RoomHooks
+ * @property {number} [expiryDays]  Delete the room after this many days without use (0 = never). Default 60.
+ * @property {(at: number) => void} [setAlarm]  Call onAlarm() at this time. Cloudflare: a DO alarm. Node sweeps instead.
+ * @property {() => void | Promise<void>} [destroy]  Remove the room's storage entirely. Default: drop its tables.
+ */
 /** @typedef {{ role: 'dm' } | { role: 'player', seat: { id: string, name: string } }} Auth */
 
 /** @param {Uint8Array} bytes */
@@ -37,10 +45,13 @@ export class Room {
   /**
    * @param {import('./store.js').Store} store
    * @param {import('./sockets.js').Sockets} [sockets]
+   * @param {RoomHooks} [hooks]
    */
-  constructor(store, sockets = { all: () => [] }) {
+  constructor(store, sockets = { all: () => [] }, hooks = {}) {
     this.store = store;
     this.sockets = sockets;
+    this.hooks = hooks;
+    this.expiryDays = hooks.expiryDays ?? 60;
     // Migrate rooms that already exist; a fresh database stays empty until create().
     if (hasSchema(store)) migrate(store);
   }
@@ -79,6 +90,7 @@ export class Room {
       const body = raw ? parseJson(raw) : null;
 
       if (method === 'PATCH' && pathname === '/room') return this.patchRoom(body);
+      if (method === 'DELETE' && pathname === '/room') return await this.deleteRoom('deleted');
       if (method === 'POST' && pathname === '/rotate-key') return await this.rotateKey();
       if (method === 'POST' && pathname === '/seats') return this.addSeat(body);
       if ((m = pathname.match(/^\/seats\/([^/]+)$/))) {
@@ -154,6 +166,7 @@ export class Room {
         this.store.sql(`INSERT INTO seats (id, name, sort) VALUES (?, ?, ?)`, newId(), seat, index);
       });
     });
+    this.scheduleExpiry(now);
     return json({ code: body.code, adminKey }, 201);
   }
 
@@ -606,7 +619,8 @@ export class Room {
     } catch {
       return;
     }
-    if (!message || typeof message !== 'object' || !hasSchema(this.store)) return;
+    if (!message || typeof message !== 'object') return;
+    if (!hasSchema(this.store)) return this.signOutConn(conn, 'roomDeleted');
 
     const meta = conn.meta();
     if (!meta) {
@@ -791,7 +805,52 @@ export class Room {
   /** Marks the room as used (for expiry), at most once an hour to save writes. */
   touch() {
     const now = this.store.now();
-    if (now - Number(this.meta().last_active_at ?? 0) > HOUR) this.setMeta('last_active_at', now);
+    if (now - Number(this.meta().last_active_at ?? 0) > HOUR) {
+      this.setMeta('last_active_at', now);
+      this.scheduleExpiry(now);
+    }
+  }
+
+  // ---------- Expiry and deletion
+
+  /** @param {number} lastActive */
+  scheduleExpiry(lastActive) {
+    if (this.expiryDays > 0) this.hooks.setAlarm?.(lastActive + this.expiryDays * DAY);
+  }
+
+  /** When the room would be deleted if nobody uses it, or null if rooms never expire here. */
+  expiresAt() {
+    return this.expiryDays > 0 ? Number(this.meta().last_active_at) + this.expiryDays * DAY : null;
+  }
+
+  /** The host's timer (Cloudflare alarm, Node sweep): delete the room if it has gone unused long enough. */
+  async onAlarm() {
+    if (!hasSchema(this.store)) return false;
+    const at = this.expiresAt();
+    if (at == null) return false;
+    if (this.store.now() >= at) {
+      await this.deleteRoom('expired');
+      return true;
+    }
+    this.hooks.setAlarm?.(at); // used since the alarm was set: check again at the new date
+    return false;
+  }
+
+  /**
+   * Deletes everything: cards, images, seats, reveals. Connected devices are told and signed out first.
+   * @param {'deleted' | 'expired'} reason
+   */
+  async deleteRoom(reason) {
+    for (const conn of this.sockets.all()) this.signOutConn(conn, 'roomDeleted');
+    if (this.hooks.destroy) {
+      await this.hooks.destroy();
+    } else {
+      const tables = this.store.sql(`SELECT name FROM sqlite_master WHERE type = 'table'`).map((t) => String(t.name));
+      this.store.tx(() => {
+        for (const table of tables) this.store.sql(`DROP TABLE IF EXISTS "${table}"`);
+      });
+    }
+    return json({ ok: true, reason });
   }
 
   /** @param {unknown} seatId */
@@ -840,6 +899,7 @@ export class Room {
     return {
       code: meta.code, name: meta.name, joinLocked: meta.join_locked === '1',
       createdAt: Number(meta.created_at), lastActiveAt: Number(meta.last_active_at),
+      expiryDays: this.expiryDays, expiresAt: this.expiresAt(),
     };
   }
 

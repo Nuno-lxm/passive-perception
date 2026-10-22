@@ -46,7 +46,7 @@ const changed = () => listeners.forEach((fn) => fn());
 /** @type {ReturnType<typeof connectRoom> | null} */
 let socket = null;
 
-function start() {
+async function start() {
   const fragment = new URLSearchParams(location.hash.slice(1));
   const code = normalizeRoomCode(fragment.get('r'));
   if (!code) return showRoomList();
@@ -59,6 +59,8 @@ function start() {
     return app.replaceChildren(h('section.screen', null,
       h('h1', null, formatRoomCode(code)), h('p', null, t('dm.noKey')), h('a.button', { href: '/dm' }, t('dm.myRooms'))));
   }
+  // A room deleted by its DM or by expiry: say so, and forget it here.
+  if ((await api(`/rooms/${code}`)).status === 404) return roomGone(code, t('dm.roomGone'));
   fallbackKey = saved?.key && saved.key !== key ? saved.key : null;
   state.code = code;
   setKey(key);
@@ -82,6 +84,14 @@ function setKey(key) {
 
 /** The full DM link for this room. @param {string} [origin] */
 const dmLink = (origin = '') => `${origin}/dm#r=${state.code}&k=${state.key}`;
+
+/** The room no longer exists: forget it on this device. @param {string} code @param {string} message */
+function roomGone(code, message) {
+  socket?.close();
+  storage.saveDmRoom(code, undefined);
+  app.replaceChildren(h('section.screen', null,
+    h('h1', null, formatRoomCode(code)), h('p', null, message), h('a.button', { href: '/dm' }, t('dm.myRooms'))));
+}
 
 function showRoomList() {
   const rooms = Object.entries(storage.dmRooms());
@@ -137,6 +147,7 @@ function onMessage(message) {
       break;
     }
     case 'signedOut':
+      if (message.reason === 'roomDeleted') return roomGone(state.code, t('dm.roomGone'));
       if (message.reason === 'key_rotated' && rotating) return; // this device did it; resetKey() reconnects
       if (message.reason === 'bad_key' && fallbackKey) {
         setKey(fallbackKey); // the address held an outdated key; the one this device had still works
@@ -913,9 +924,14 @@ function roomPane() {
   const lock = /** @type {HTMLInputElement} */ (h('input', { type: 'checkbox', id: 'lock' }));
   lock.addEventListener('change', () => call('/room', { method: 'PATCH', body: { joinLocked: lock.checked } }));
   const seats = h('div.list');
+  const expiry = h('p.hint');
   const newSeat = /** @type {HTMLInputElement} */ (h('input', { maxlength: 40, placeholder: t('dm.seatName'), 'aria-label': t('dm.seatName') }));
 
   listeners.add(() => {
+    const room = /** @type {any} */ (state.room);
+    expiry.textContent = room?.expiresAt
+      ? t('dm.expiryText', { days: room.expiryDays, date: new Intl.DateTimeFormat(lang, { dateStyle: 'long' }).format(room.expiresAt) })
+      : t('dm.noExpiry');
     if (document.activeElement !== name) name.value = state.room?.name ?? '';
     lock.checked = Boolean(state.room?.joinLocked);
     seats.replaceChildren(...state.seats.map((seat) => h('div.seat-row', null,
@@ -949,7 +965,37 @@ function roomPane() {
     h('div.row', null,
       h('button', { type: 'button', onclick: () => showSaveLink(false) }, t('dm.showLink')),
       h('button.danger', { type: 'button', onclick: resetKey }, t('dm.resetLink'))),
+
+    h('h2', null, t('dm.keeping')),
+    expiry,
+    h('div.row', null,
+      h('button.danger', { type: 'button', onclick: deleteRoomDialog }, t('dm.deleteRoom'))),
   );
+}
+
+/** Deleting is permanent, so the DM types the room code to confirm. */
+function deleteRoomDialog() {
+  const code = formatRoomCode(state.code);
+  const input = /** @type {HTMLInputElement} */ (h('input', {
+    id: 'delete-confirm', autocomplete: 'off', autocapitalize: 'characters', spellcheck: false, placeholder: code,
+  }));
+  const go = /** @type {HTMLButtonElement} */ (h('button.danger', { type: 'button', disabled: true }, t('dm.deleteRoom')));
+  input.addEventListener('input', () => (go.disabled = normalizeRoomCode(input.value) !== state.code));
+  go.addEventListener('click', async () => {
+    go.disabled = true;
+    const result = await call('/room', { method: 'DELETE' });
+    if (!result.ok) return void (go.disabled = false);
+    dialog.close();
+    roomGone(state.code, t('dm.roomDeleted'));
+  });
+  const dialog = openDialog([
+    closeButton(t('common.close')),
+    h('h2', null, t('dm.deleteRoomTitle')),
+    h('p', null, t('dm.deleteRoomText')),
+    h('label', { for: 'delete-confirm' }, t('dm.deleteRoomType', { code })), input,
+    h('div.dialog-footer', null, go),
+  ]);
+  input.focus();
 }
 
 /** This device's preferences (not the room's): keep screen on, theme, language. */
