@@ -36,6 +36,12 @@
         <p id="create-error" class="error" role="alert"></p>
         <button type="submit" class="primary" data-i18n="landing.createButton">Create room</button>
       </form>
+      <details class="from-file">
+        <summary data-i18n="landing.fromFile">Or start from an export file</summary>
+        <p class="hint" data-i18n="landing.fromFileHint">Make a new room from a campaign you exported. Players join it again.</p>
+        <input type="file" id="import-file" accept=".json,application/json" data-i18n-aria-label="landing.fromFile" aria-label="Export file">
+        <div id="import-summary"></div>
+      </details>
       <p><a href="/dm" data-i18n="dm.myRooms">My rooms</a></p>
     </section>
 

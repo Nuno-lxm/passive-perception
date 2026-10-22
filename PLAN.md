@@ -519,8 +519,8 @@ Asked for after the first table test, to make reveals quicker mid-game:
 ### M2: public launch
 
 - Landing page (one sentence, demo GIF, Create / Join, self-host link) + privacy page, EN + PT.
-- 60-day expiry alarm + "deleted on…" note on the DM screen; *Delete room now*; *Leave room*.
-- **Export / import a campaign** (moved here from M3: once rooms delete themselves, DMs need a way to keep their prep).
+- ✅ 60-day expiry (a Durable Object alarm per room; an hourly sweep on the Node host, `ROOM_EXPIRY_DAYS`, 0 = never) + "if nobody uses it, it goes on…" on the Room tab; *Delete room* (type the code to confirm); *Leave room*.
+- ✅ **Export / import a campaign** (moved here from M3: once rooms delete themselves, DMs need a way to keep their prep).
   - **Export** (Room → *Export campaign*): one `.json` file with the room name, seat names, cards, groups and images
     (base64), plus the reveal history (who got what, when, which session). Streamed by the room, since it can reach ~70 MB.
     Seat tokens, links and the DM key are never exported.
