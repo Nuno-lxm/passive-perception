@@ -503,6 +503,19 @@ Both hosts are in v1. I don't know the date of your next session; tell me and I'
 2. **Use devtools on a player's phone (or Chrome remote debugging) to look for another player's secret** in the page source, network tab and WebSocket frames.
 3. At the session: lock a phone for 10 minutes, then wake it; reload; toggle airplane mode; claim the wrong seat; reveal to someone who hasn't joined.
 
+### M1.5: prep tools (done)
+
+Asked for after the first table test, to make reveals quicker mid-game:
+- **Pre-picked players + private note.** Each card can say who it's usually for (pre-selected when you open it, so a
+  reveal is one tap) and carry a DM-only note ("DC 15 Perception"). Both are filtered out of everything players
+  receive, like any other DM-only field (§5, tested).
+- **Group bar** (one tap per group/scene) and a **To reveal / Revealed / All** filter, remembered per device.
+- **Drag to reorder** within a list (arrow keys on the handle do the same), and **Duplicate** (copies text, note,
+  players and images; nothing revealed).
+- **Import cards** from pasted notes or a `.txt` / `.md` file: `#` group, `##` card, optional `for:` / `note:` lines
+  (also `para:` / `nota:`). Preview with warnings before anything is created; all-or-nothing on the server.
+  Up to 200 cards per import. The reader is `public/js/import-text.js`, tested on its own.
+
 ### M2: public launch
 
 - Landing page (one sentence, demo GIF, Create / Join, self-host link) + privacy page, EN + PT.

@@ -11,6 +11,8 @@ const DYNAMIC = {
   'status.': ['connecting', 'open', 'offline', 'stopped'],
   'signedOut.': ['moved', 'released', 'removed', 'left', 'other'],
   'theme.': ['candlelit', 'light', 'dark', 'auto'],
+  'dm.filter.': ['all', 'unrevealed', 'revealed'],
+  'import.': ['noCards', 'bodyTooLong', 'noteTooLong', 'tooMany', 'unknownPlayer', 'strayText', 'titleShortened', 'groupShortened'],
 };
 
 test('pt-PT has the same keys as English, with the same placeholders', () => {

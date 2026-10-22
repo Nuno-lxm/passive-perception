@@ -492,6 +492,45 @@ body[data-tab="settings"] .pane.settings { display: block; }
 .holder + .holder::before { content: "· "; color: var(--muted); }
 .list > .hint { padding: 14px 4px; font: italic 1.02rem var(--serif); }
 
+/* Group bar: one tap to switch scene. Scrolls sideways on phones rather than wrapping. */
+.group-bar { display: flex; gap: 6px; overflow-x: auto; padding: 4px 0 8px; margin: 4px 0 2px; scrollbar-width: thin; }
+.group-bar button { flex: none; min-height: 36px; padding: 4px 12px; background: transparent; border-color: var(--line-strong); white-space: nowrap; }
+.group-bar button[aria-selected="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 700; }
+
+/* To reveal / Revealed / All */
+.segmented { display: inline-flex; margin: 0 0 10px; border: 1px solid var(--line-strong); border-radius: var(--radius); overflow: hidden; }
+.segmented button { min-height: 34px; padding: 2px 12px; border: none; border-radius: 0; background: transparent; font-size: 0.92rem; color: var(--muted); }
+.segmented button + button { border-left: 1px solid var(--line-strong); }
+.segmented button[aria-checked="true"] { background: var(--surface-2); color: var(--text); font-weight: 700; box-shadow: inset 0 -2px 0 var(--accent); }
+
+/* A card row with its drag handle. */
+.card-item { display: flex; align-items: stretch; border-bottom: 1px solid var(--line); background: var(--bg); position: relative; }
+.card-item .card-row { border-bottom: none; flex: 1; min-width: 0; }
+.card-item.dragging { z-index: 3; box-shadow: var(--shadow); opacity: 0.95; background: var(--surface-2); }
+.grip { flex: none; width: 34px; min-height: 0; padding: 0; border: none; border-radius: 0; background: none; color: var(--muted); cursor: grab; touch-action: none; }
+.grip:hover, .grip:focus-visible { color: var(--text); }
+.card-item.dragging .grip { cursor: grabbing; }
+.dm-note-line { display: flex; gap: 6px; align-items: center; font-size: 0.88rem; color: var(--accent); max-width: 100%; }
+.dm-note-line span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.for-names { font-size: 0.82rem; color: var(--muted); font-style: italic; }
+
+/* The DM's private note on the open card: clearly not part of what players see. */
+.dm-note-box { border: 1px dashed var(--accent); border-radius: var(--radius); padding: 8px 12px; background: var(--accent-soft); }
+.dm-note-box .label { display: flex; gap: 6px; align-items: center; font: 700 0.75rem/1 var(--sans); text-transform: uppercase; letter-spacing: 0.12em; color: var(--accent); margin-bottom: 6px; }
+.dm-note-box p { margin: 0; white-space: pre-wrap; }
+.label-like { font-weight: 700; font-size: 0.95rem; }
+
+/* Import box */
+.import-format summary { cursor: pointer; color: var(--accent); }
+.import-format pre { background: var(--field-bg); border: 1px solid var(--line); border-radius: var(--radius); padding: 10px 12px; font: 0.85rem/1.45 var(--mono); white-space: pre-wrap; margin: 8px 0; }
+#import-text { font: 0.9rem/1.45 var(--mono); }
+.import-preview { min-height: 1.5em; }
+.import-preview ul, .import-preview ol { margin: 6px 0; padding-left: 1.3em; }
+.import-errors { color: var(--danger); }
+.import-warnings { color: var(--muted); font-size: 0.9rem; }
+.import-list li { margin: 2px 0; }
+.import-list .more { list-style: none; color: var(--muted); font-style: italic; }
+
 .sheet-content { display: flex; flex-direction: column; gap: 12px; }
 .sheet-content > h3, .holders-list > h3 { font: 700 0.78rem/1 var(--sans); text-transform: uppercase; letter-spacing: 0.16em; color: var(--accent); margin: 10px 0 0; }
 .note.preview { margin-right: 40px; }

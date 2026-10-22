@@ -105,6 +105,19 @@ const ICONS = {
     ['circle', { cx: 15.5, cy: 12, r: 2.4, fill: true }],
     ['circle', { cx: 7.5, cy: 18, r: 2.4, fill: true }],
   ],
+  // A note card with lines: the DM's private note.
+  note: [
+    ['rect', { x: 4.5, y: 3.5, width: 15, height: 17, rx: 2 }],
+    ['line', { x1: 8, y1: 8.5, x2: 16, y2: 8.5, 'stroke-linecap': 'round' }],
+    ['line', { x1: 8, y1: 12, x2: 16, y2: 12, 'stroke-linecap': 'round' }],
+    ['line', { x1: 8, y1: 15.5, x2: 13, y2: 15.5, 'stroke-linecap': 'round' }],
+  ],
+  // Six dots: "drag me".
+  grip: [
+    ['circle', { cx: 9, cy: 6, r: 1.6, fill: true }], ['circle', { cx: 15, cy: 6, r: 1.6, fill: true }],
+    ['circle', { cx: 9, cy: 12, r: 1.6, fill: true }], ['circle', { cx: 15, cy: 12, r: 1.6, fill: true }],
+    ['circle', { cx: 9, cy: 18, r: 1.6, fill: true }], ['circle', { cx: 15, cy: 18, r: 1.6, fill: true }],
+  ],
   // A framed picture: sun and hills.
   image: [
     ['rect', { x: 3.5, y: 4.5, width: 17, height: 15, rx: 2 }],
