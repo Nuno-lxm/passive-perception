@@ -16,6 +16,7 @@ translatePage();
 /** @type {HTMLAnchorElement} */ ($('#repo-link')).href = site.repoUrl;
 /** @type {HTMLAnchorElement} */ ($('#selfhost-link')).href = `${site.repoUrl}#run-your-own`;
 if (config.mode === 'local') for (const el of document.querySelectorAll('.marketing')) /** @type {HTMLElement} */ (el).hidden = true;
+$('#report-link').hidden = !config.reports;
 
 const language = /** @type {HTMLSelectElement} */ ($('#language'));
 language.replaceChildren(...LANGUAGES.map((l) => h('option', { value: l.code, selected: l.code === lang }, l.name)));

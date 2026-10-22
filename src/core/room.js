@@ -74,18 +74,31 @@ export class Room {
       if (method === 'POST' && pathname === '/redeem') return await this.redeem(await readJson(request));
       if (method === 'POST' && pathname === '/cancel-claim') return this.cancelClaim(await readJson(request));
 
+      // Operator tools. Two locks: the API router refuses /admin paths from outside, and only its adminApi()
+      // (after checking ADMIN_TOKEN) sets the marker header, which it strips from everything clients send.
+      if (pathname.startsWith('/admin/')) {
+        if (request.headers.get('x-whisperer-admin') !== '1') return fail('not_found', 404);
+        return await this.adminRoute(method, pathname, request);
+      }
+
       const auth = await this.authenticate(request);
       if (!auth) return fail('unauthorized', 401);
 
       // A player or the DM.
       let m = pathname.match(/^\/images\/([^/]+)$/);
       if (method === 'GET' && m) return this.image(auth, m[1], searchParams.get('thumb') === '1');
+      if (method === 'POST' && pathname === '/report') {
+        if (auth.role !== 'player') return fail('forbidden', 403);
+        return this.reportCard(auth.seat, await readJson(request));
+      }
       if (method === 'POST' && pathname === '/leave') {
         if (auth.role !== 'player') return fail('forbidden', 403);
         return this.releaseSeat(auth.seat.id, 'left');
       }
 
       if (auth.role !== 'dm') return fail('forbidden', 403);
+      // A room under review: the DM can look, not change or reveal anything.
+      if (this.meta().frozen === '1' && method !== 'GET') return fail('room_frozen', 423);
       // Read the body once: JSON for most routes, raw bytes for image uploads.
       const raw = method === 'GET' || method === 'DELETE' ? null : new Uint8Array(await request.arrayBuffer());
       const body = raw ? parseJson(raw) : null;
@@ -592,7 +605,8 @@ export class Room {
   image(auth, imageId, thumb) {
     const [image] = this.store.sql(`SELECT card_id, mime, data, thumb FROM images WHERE id = ?`, imageId);
     // Same answer for "doesn't exist" and "not yours", so players can't probe for ids.
-    if (!image || (auth.role === 'player' && !canSee(this.store, String(image.card_id), auth.seat.id))) {
+    const hidden = auth.role === 'player' && (this.meta().frozen === '1' || !canSee(this.store, String(image?.card_id), auth.seat.id));
+    if (!image || hidden) {
       return fail('image_not_found', 404);
     }
     const bytes = thumb && image.thumb ? image.thumb : image.data;
@@ -663,9 +677,10 @@ export class Room {
       conn.setMeta({ role: 'player', seatId: seat.id, visible: message.visible !== false });
       this.store.sql(`UPDATE seats SET last_seen_at = ? WHERE id = ?`, now, seat.id);
       this.touch();
+      const frozen = this.meta().frozen === '1';
       this.send(conn, {
-        t: 'welcome', role: 'player', room: this.playerRoom(), seat,
-        feed: feedFor(this.store, seat.id), sessions: this.sessions(), serverTime: now,
+        t: 'welcome', role: 'player', room: this.playerRoom(), seat, frozen,
+        feed: frozen ? [] : feedFor(this.store, seat.id), sessions: this.sessions(), serverTime: now,
       });
       this.toDms({ t: 'presence', seats: this.presence() });
     } else if (message.role === 'dm') {
@@ -818,6 +833,57 @@ export class Room {
     }
   }
 
+  // ---------- Reports and moderation
+
+  /**
+   * A player reports a card they received. The room checks they really have it and builds a snapshot for the
+   * operator; the API router passes it on to the admin store. The DM is not told who reported.
+   * @param {{ id: string, name: string }} seat @param {any} body  { cardId, reason, note }
+   */
+  reportCard(seat, body) {
+    const cardId = typeof body?.cardId === 'string' ? body.cardId : '';
+    const item = cardId ? playerItem(this.store, cardId, seat.id) : null;
+    if (!item) return fail('card_not_found', 404);
+    const meta = this.meta();
+    return json({
+      report: {
+        kind: 'player', roomCode: meta.code, cardId, reason: body?.reason, note: body?.note,
+        snapshot: { roomName: meta.name, seat: seat.name, title: item.title, body: item.body, images: item.images.map((i) => i.id), revealedAt: item.at },
+      },
+    });
+  }
+
+  /**
+   * The operator's tools, reached only through the API router's /api/admin/… after it checked ADMIN_TOKEN.
+   * @param {string} method @param {string} pathname @param {Request} request
+   */
+  async adminRoute(method, pathname, request) {
+    const meta = this.meta();
+    if (method === 'GET' && pathname === '/admin/info') {
+      const [{ cards }] = this.store.sql(`SELECT count(*) AS cards FROM cards`);
+      const [{ bytes }] = this.store.sql(`SELECT coalesce(sum(bytes), 0) AS bytes FROM images`);
+      return json({ code: meta.code, name: meta.name, frozen: meta.frozen === '1', cards: Number(cards), imageBytes: Number(bytes),
+        createdAt: Number(meta.created_at), lastActiveAt: Number(meta.last_active_at) });
+    }
+    if (method === 'POST' && pathname === '/admin/freeze') {
+      const frozen = (await readJson(request))?.frozen === true;
+      this.setMeta('frozen', frozen ? 1 : 0);
+      // Everyone reconnects and gets the room as it now is (frozen: no feed for players, read-only for the DM).
+      for (const conn of this.sockets.all()) {
+        try {
+          conn.close(4001, 'refresh');
+        } catch {
+          // already closed
+        }
+      }
+      return json({ frozen });
+    }
+    if (method === 'POST' && pathname === '/admin/delete') return await this.deleteRoom('deleted');
+    const m = pathname.match(/^\/admin\/images\/([^/]+)$/);
+    if (method === 'GET' && m) return this.image({ role: 'dm' }, m[1], new URL(request.url).searchParams.get('thumb') === '1');
+    return fail('not_found', 404);
+  }
+
   // ---------- Export / import
 
   /** The whole campaign as one JSON file download (see transfer.js). */
@@ -936,7 +1002,7 @@ export class Room {
   dmRoom() {
     const meta = this.meta();
     return {
-      code: meta.code, name: meta.name, joinLocked: meta.join_locked === '1',
+      code: meta.code, name: meta.name, joinLocked: meta.join_locked === '1', frozen: meta.frozen === '1',
       createdAt: Number(meta.created_at), lastActiveAt: Number(meta.last_active_at),
       expiryDays: this.expiryDays, expiresAt: this.expiresAt(),
     };

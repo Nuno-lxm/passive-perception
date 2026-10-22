@@ -36,19 +36,22 @@ export function hasSchema(/** @type {import('./store.js').Store} */ store) {
   return store.sql(`SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'meta'`).length > 0;
 }
 
-/** Brings the database up to the latest migration. */
-export function migrate(/** @type {import('./store.js').Store} */ store) {
+/**
+ * Brings a database up to its latest migration (a room's by default; the admin database passes its own).
+ * @param {import('./store.js').Store} store @param {string[][]} [migrations]
+ */
+export function migrate(store, migrations = MIGRATIONS) {
   store.tx(() => {
     let version = 0;
     if (hasSchema(store)) {
       const row = store.sql(`SELECT value FROM meta WHERE key = 'schema_version'`)[0];
       version = row ? Number(row.value) : 0;
     }
-    for (let i = version; i < MIGRATIONS.length; i++) {
-      for (const statement of MIGRATIONS[i]) store.sql(statement);
+    for (let i = version; i < migrations.length; i++) {
+      for (const statement of migrations[i]) store.sql(statement);
     }
-    if (version < MIGRATIONS.length) {
-      store.sql(`INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', ?)`, String(MIGRATIONS.length));
+    if (version < migrations.length) {
+      store.sql(`INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', ?)`, String(migrations.length));
     }
   });
 }

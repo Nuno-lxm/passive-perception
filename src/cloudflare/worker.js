@@ -5,13 +5,17 @@ import { handleApi, internal } from '../core/api.js';
 import { fail } from '../core/http.js';
 
 export { RoomDO } from './room-do.js';
+export { AdminDO } from './admin-do.js';
 
 /**
  * @typedef {object} Env
  * @property {DurableObjectNamespace} ROOM
+ * @property {DurableObjectNamespace} [ADMIN]  Content reports (one object).
+ * @property {string} [ADMIN_TOKEN]  Secret (wrangler secret put ADMIN_TOKEN): unlocks /admin.
  * @property {string} [DO_JURISDICTION]  'eu' keeps room data in the EU. Fixed for good once rooms exist.
  * @property {{ limit(options: { key: string }): Promise<{ success: boolean }> }} [JOIN_LIMIT]
  * @property {{ limit(options: { key: string }): Promise<{ success: boolean }> }} [CREATE_LIMIT]
+ * @property {{ limit(options: { key: string }): Promise<{ success: boolean }> }} [REPORT_LIMIT]
  */
 
 export default {
@@ -34,12 +38,15 @@ export default {
 /** @param {Env} env @returns {import('../core/api.js').Host} */
 function cloudflareHost(env) {
   const rooms = env.DO_JURISDICTION ? env.ROOM.jurisdiction(/** @type {any} */ (env.DO_JURISDICTION)) : env.ROOM;
+  const admins = env.ADMIN && (env.DO_JURISDICTION ? env.ADMIN.jurisdiction(/** @type {any} */ (env.DO_JURISDICTION)) : env.ADMIN);
   return {
+    admin: admins ? () => admins.get(admins.idFromName('admin')) : undefined,
+    adminToken: env.ADMIN_TOKEN,
     // A Durable Object exists as soon as it's addressed; Room writes nothing until create().
     room: (code) => rooms.get(rooms.idFromName(code)),
     // Approximate, per Cloudflare location. Strict daily limits come with the AdminDO (M2).
     async allow(request, bucket) {
-      const limiter = bucket === 'create' ? env.CREATE_LIMIT : env.JOIN_LIMIT;
+      const limiter = bucket === 'create' ? env.CREATE_LIMIT : bucket === 'report' ? env.REPORT_LIMIT : env.JOIN_LIMIT;
       if (!limiter) return true;
       const ip = request.headers.get('cf-connecting-ip') ?? 'unknown';
       return (await limiter.limit({ key: `${bucket}:${ip}` })).success;

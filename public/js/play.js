@@ -6,6 +6,7 @@ import { formatRoomCode, normalizeRoomCode } from './room-code.js';
 import * as storage from './storage.js';
 import { $, closeButton, h, icon, openDialog, screenWakeLock, snackbar, themeField } from './ui.js';
 import { openViewer } from './viewer.js';
+import { config } from '../config.js';
 
 const app = $('#app');
 const wake = screenWakeLock();
@@ -175,6 +176,8 @@ function showFeed() {
   let items = cached?.items ?? [];
   /** @type {{ n: number, startedAt: number }[]} */
   let sessions = cached?.sessions ?? [];
+  /** The room is under review by the operator: nothing is shown. */
+  let frozen = false;
   /** Items not yet seen on this device: they glow until seen. */
   const unseen = new Set();
   /** @type {Set<string>} */
@@ -248,6 +251,10 @@ function showFeed() {
 
   function render() {
     observer.disconnect();
+    if (frozen) {
+      list.replaceChildren(h('div.empty', null, h('p', null, t('feed.frozen'))));
+      return;
+    }
     if (!items.length) {
       list.replaceChildren(h('div.empty', null,
         h('p', null, t('feed.empty')),
@@ -301,7 +308,8 @@ function showFeed() {
         h('span.meta', null,
           formatWhen(item.at),
           item.shared && h('span.tag', null, t('feed.shared')),
-          item.edited && h('span.tag', null, t('feed.edited'))),
+          item.edited && h('span.tag', null, t('feed.edited')),
+          config.reports && h('button.link.report', { type: 'button', onclick: () => reportItem(roomCode, seat.token, item) }, t('report.button'))),
         ack));
   }
 
@@ -309,6 +317,7 @@ function showFeed() {
   function onMessage(message) {
     switch (message.t) {
       case 'welcome': {
+        frozen = message.frozen === true;
         const known = new Set(items.map((i) => i.id));
         items = message.feed;
         sessions = message.sessions;
@@ -371,6 +380,35 @@ function showFeed() {
 
   render();
   socket = connectRoom(roomCode, () => ({ role: 'player', token: storage.seats()[roomCode]?.token }), { onMessage, onStatus });
+}
+
+/**
+ * Report a whisper to the people who run the service (not to the DM).
+ * @param {string} roomCode @param {string} token @param {Item} item
+ */
+function reportItem(roomCode, token, item) {
+  const reasons = ['illegal', 'abuse', 'child', 'other'];
+  const radios = reasons.map((reason, i) => /** @type {HTMLInputElement} */ (h('input', { type: 'radio', name: 'reason', id: `reason-${reason}`, value: reason, checked: i === 0 })));
+  const note = /** @type {HTMLTextAreaElement} */ (h('textarea', { id: 'report-note', rows: 3, maxlength: 2000 }));
+  const send = /** @type {HTMLButtonElement} */ (h('button.primary', { type: 'button' }, t('report.send')));
+  send.addEventListener('click', async () => {
+    send.disabled = true;
+    const reason = radios.find((r) => r.checked)?.value ?? 'other';
+    const result = await api(`/rooms/${roomCode}/report`, { method: 'POST', auth: token, body: { cardId: item.id, reason, note: note.value } });
+    send.disabled = false;
+    if (!result.ok) return snackbar(errorText(result.error));
+    dialog.close();
+    snackbar(t('report.thanks'), { ms: 6000 });
+  });
+  const dialog = openDialog([
+    closeButton(t('common.close')),
+    h('h2', null, t('report.title')),
+    h('p.hint', null, t('report.intro')),
+    h('div.choice', null, ...reasons.map((reason, i) =>
+      h('label.option', { for: `reason-${reason}` }, radios[i], h('span', null, t(`report.reason.${reason}`))))),
+    h('label', { for: 'report-note' }, t('report.note')), note,
+    h('div.dialog-footer', null, send),
+  ]);
 }
 
 /** @param {Item} item */
