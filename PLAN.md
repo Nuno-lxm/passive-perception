@@ -407,7 +407,7 @@ A DM uses roughly 50–150 requests per session, which fits easily in the budget
 
 ### Both sides
 
-- **Two themes, picked per device in Settings** (and on the landing page): **Candlelit** (default; dark and warm, umber wood, parchment notes, candle amber, self-hosted Alegreya) and **Daylight** (light and plain: grey page, white cards, crimson accent, dark top bar, the device's own sans-serif), or *Match device*. `js/theme.js` applies the choice in `<head>` before the page paints. Every colour is a CSS variable, so a theme is one block of values. Body ≥ 17 px, tap targets ≥ 44 px.
+- **Three themes, picked per device in Settings** (and on the landing page): **Candlelit** (default; dark and warm, umber wood, parchment notes, candle amber, self-hosted Alegreya) and **Light** (plain: grey page, white cards, crimson accent, dark top bar, the device's own sans-serif) and **Dark** (Light's layout in dark greys, close to how Dark Reader renders Light), or *Match device* (Light or Dark from the device setting). `js/theme.js` applies the choice in `<head>` before the page paints. Every colour is a CSS variable, so a theme is one block of values. Body ≥ 17 px, tap targets ≥ 44 px.
 - Respects `safe-area-inset-*` and uses `100dvh`. `overscroll-behavior: contain` stops a swipe from reloading the page by accident.
   Pinch-zoom is never disabled.
 - Respects `prefers-reduced-motion`.

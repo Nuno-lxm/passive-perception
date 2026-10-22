@@ -10,7 +10,7 @@ const DYNAMIC = {
   'presence.': ['online', 'away', 'offline', 'unclaimed'],
   'status.': ['connecting', 'open', 'offline', 'stopped'],
   'signedOut.': ['moved', 'released', 'removed', 'left', 'other'],
-  'theme.': ['candlelit', 'daylight', 'auto'],
+  'theme.': ['candlelit', 'light', 'dark', 'auto'],
 };
 
 test('pt-PT has the same keys as English, with the same placeholders', () => {
