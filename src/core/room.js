@@ -91,6 +91,8 @@ export class Room {
         return await this.decideClaim(m[1], m[2] === 'approve');
       }
       if (method === 'POST' && pathname === '/cards') return this.addCard(body);
+      if (method === 'POST' && pathname === '/cards/bulk') return this.importCards(body);
+      if (method === 'POST' && (m = pathname.match(/^\/cards\/([^/]+)\/duplicate$/))) return this.duplicateCard(m[1]);
       if ((m = pathname.match(/^\/cards\/([^/]+)$/))) {
         if (method === 'PATCH') return this.editCard(m[1], body);
         if (method === 'DELETE') return this.deleteCard(m[1]);
@@ -343,32 +345,98 @@ export class Room {
 
   // ---------- Cards
 
-  /** @param {any} body  { title, body, grp, quick } */
+  /** @param {any} body  { title, body, grp, note, forSeats, quick } */
   addCard(body) {
     const fields = parseCardFields(body);
-    const [{ n, top }] = this.store.sql(`SELECT count(*) AS n, max(sort) AS top FROM cards`);
-    if (n >= LIMITS.cards) throw new InputError('too_many_cards');
-    const id = newId();
-    const now = this.store.now();
-    this.store.sql(
-      `INSERT INTO cards (id, title, body, grp, quick, sort, created_at, updated_at, content_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      id, fields.title ?? '', fields.body ?? '', fields.grp ?? null, body?.quick ? 1 : 0, (top ?? 0) + 1, now, now, now,
-    );
+    this.assertRoomForCards(1);
+    const id = this.insertCard(fields, { quick: Boolean(body?.quick) });
     return this.cardChanged(id, 201);
   }
 
-  /** @param {string} cardId @param {any} body */
-  editCard(cardId, body) {
-    const [card] = this.store.sql(`SELECT title, body, grp FROM cards WHERE id = ?`, cardId);
+  /**
+   * Many cards at once (the "Import cards" box). All or nothing: one bad card rejects the whole import.
+   * @param {any} body  { cards: [{ title, body, grp, note, forSeats }] }
+   */
+  importCards(body) {
+    const list = Array.isArray(body?.cards) ? body.cards : [];
+    if (!list.length) throw new InputError('nothing_to_import');
+    if (list.length > LIMITS.importCards) throw new InputError('too_many_to_import');
+    const parsed = list.map((card) => parseCardFields(card));
+    this.assertRoomForCards(parsed.length);
+    const ids = this.store.tx(() => parsed.map((fields) => this.insertCard(fields)));
+    this.toDms({ t: 'cards', cards: dmCards(this.store) });
+    return json({ imported: ids.length, ids }, 201);
+  }
+
+  /** A copy right after the original: text, group, note, players and images, but nothing revealed. @param {string} cardId */
+  duplicateCard(cardId) {
+    const [card] = this.store.sql(`SELECT title, body, grp, note, for_seats, sort FROM cards WHERE id = ?`, cardId);
     if (!card) return fail('card_not_found', 404);
-    const fields = { title: card.title, body: card.body, grp: card.grp, ...parseCardFields(body) };
+    this.assertRoomForCards(1);
+    const images = this.store.sql(`SELECT mime, w, h, bytes, data, thumb, sort FROM images WHERE card_id = ? ORDER BY sort`, cardId);
+    const [{ total }] = this.store.sql(`SELECT coalesce(sum(bytes), 0) AS total FROM images`);
+    const extra = images.reduce((sum, image) => sum + Number(image.bytes), 0);
+    if (total + extra > IMAGE_LIMITS.roomBytes) return fail('room_storage_full', 400);
+    const [next] = this.store.sql(`SELECT min(sort) AS s FROM cards WHERE sort > ?`, card.sort);
+    const sort = next?.s == null ? Number(card.sort) + 1 : (Number(card.sort) + Number(next.s)) / 2;
+    const now = this.store.now();
+    const id = this.store.tx(() => {
+      const copy = this.insertCard({
+        title: String(card.title), body: String(card.body), grp: card.grp == null ? null : String(card.grp),
+        note: String(card.note), forSeats: JSON.parse(String(card.for_seats)), sort,
+      });
+      for (const image of images) {
+        this.store.sql(
+          `INSERT INTO images (id, card_id, sort, mime, w, h, bytes, data, thumb, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          newId(), copy, image.sort, image.mime, image.w, image.h, image.bytes, image.data, image.thumb ?? null, now,
+        );
+      }
+      return copy;
+    });
+    return this.cardChanged(id, 201);
+  }
+
+  /** @param {number} adding */
+  assertRoomForCards(adding) {
+    const [{ n }] = this.store.sql(`SELECT count(*) AS n FROM cards`);
+    if (n + adding > LIMITS.cards) throw new InputError('too_many_cards');
+  }
+
+  /**
+   * Inserts one card (fields already parsed). New cards go to the end unless a sort is given.
+   * @param {ReturnType<typeof parseCardFields>} fields @param {{ quick?: boolean }} [options]
+   */
+  insertCard(fields, { quick = false } = {}) {
+    const id = newId();
+    const now = this.store.now();
+    const [{ top }] = this.store.sql(`SELECT max(sort) AS top FROM cards`);
+    this.store.sql(
+      `INSERT INTO cards (id, title, body, grp, quick, sort, note, for_seats, created_at, updated_at, content_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      id, fields.title ?? '', fields.body ?? '', fields.grp ?? null, quick ? 1 : 0, fields.sort ?? (top ?? 0) + 1,
+      fields.note ?? '', JSON.stringify(this.existingSeats(fields.forSeats ?? [])), now, now, now,
+    );
+    return id;
+  }
+
+  /** @param {string} cardId @param {any} body  any of { title, body, grp, note, forSeats, sort } */
+  editCard(cardId, body) {
+    const [card] = this.store.sql(`SELECT title, body, grp, note, for_seats, sort FROM cards WHERE id = ?`, cardId);
+    if (!card) return fail('card_not_found', 404);
+    const changes = parseCardFields(body);
+    const fields = {
+      title: card.title, body: card.body, grp: card.grp, note: card.note, sort: card.sort,
+      forSeats: JSON.parse(String(card.for_seats)), ...changes,
+    };
+    // Only what players see counts as an edit for them; group, note, players and order are the DM's business.
     const contentChanged = fields.title !== card.title || fields.body !== card.body;
     const now = this.store.now();
     this.store.sql(
-      `UPDATE cards SET title = ?, body = ?, grp = ?, updated_at = ?, content_at = CASE WHEN ? THEN ? ELSE content_at END
+      `UPDATE cards SET title = ?, body = ?, grp = ?, note = ?, for_seats = ?, sort = ?, updated_at = ?,
+         content_at = CASE WHEN ? THEN ? ELSE content_at END
        WHERE id = ?`,
-      fields.title, fields.body, fields.grp, now, contentChanged ? 1 : 0, now, cardId,
+      fields.title, fields.body, fields.grp, fields.note, JSON.stringify(this.existingSeats(fields.forSeats)), fields.sort, now,
+      contentChanged ? 1 : 0, now, cardId,
     );
     if (contentChanged) this.pushToPlayers(cardId, seatsSeeing(this.store, cardId));
     return this.cardChanged(cardId);

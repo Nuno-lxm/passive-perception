@@ -9,6 +9,8 @@
  * @property {string} title
  * @property {string} body
  * @property {string | null} grp
+ * @property {string} note           Private to the DM: when to reveal.
+ * @property {string[]} forSeats     Players the card is usually for (pre-selected when revealing).
  * @property {boolean} quick
  * @property {number} sort
  * @property {number | null} publicAt
@@ -27,7 +29,7 @@ export function dmCards(store, cardId) {
   const where = cardId ? 'WHERE id = ?' : '';
   const bind = cardId ? [cardId] : [];
   const cards = store.sql(
-    `SELECT id, title, body, grp, quick, sort, public_at, created_at, updated_at FROM cards ${where} ORDER BY sort`,
+    `SELECT id, title, body, grp, quick, sort, note, for_seats, public_at, created_at, updated_at FROM cards ${where} ORDER BY sort`,
     ...bind,
   );
   const cardWhere = cardId ? 'WHERE card_id = ?' : '';
@@ -58,6 +60,8 @@ export function dmCards(store, cardId) {
       title: String(card.title),
       body: String(card.body),
       grp: card.grp == null ? null : String(card.grp),
+      note: String(card.note ?? ''),
+      forSeats: JSON.parse(String(card.for_seats ?? '[]')).filter((/** @type {string} */ id) => seatIds.includes(id)),
       quick: Boolean(card.quick),
       sort: Number(card.sort),
       publicAt: card.public_at == null ? null : Number(card.public_at),

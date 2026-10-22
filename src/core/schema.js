@@ -23,6 +23,12 @@ export const MIGRATIONS = [
        delivered_at INTEGER, seen_at INTEGER, ack_at INTEGER, PRIMARY KEY (card_id, seat_id))`,
     `CREATE TABLE sessions (n INTEGER PRIMARY KEY, started_at INTEGER NOT NULL)`,
   ],
+  // 2: prep helpers. `note` is the DM's private "when to reveal"; `for_seats` (JSON array of seat ids) are the
+  // players the card is usually for, pre-selected when revealing. Neither ever reaches a player (feed.js).
+  [
+    `ALTER TABLE cards ADD COLUMN note TEXT NOT NULL DEFAULT ''`,
+    `ALTER TABLE cards ADD COLUMN for_seats TEXT NOT NULL DEFAULT '[]'`,
+  ],
 ];
 
 /** True once the room's tables exist. Read-only, so looking up an unknown room code writes nothing. */

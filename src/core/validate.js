@@ -9,6 +9,8 @@ export const LIMITS = {
   title: 120,
   body: 4000,
   group: 40,
+  note: 1000,
+  importCards: 200,
 };
 
 export class InputError extends Error {
@@ -74,11 +76,11 @@ export function parseSeatName(value) {
 /**
  * A new card or changes to one. Only the fields present are returned, so PATCH can change one field.
  * @param {unknown} input
- * @returns {{ title?: string, body?: string, grp?: string | null }}
+ * @returns {{ title?: string, body?: string, grp?: string | null, note?: string, forSeats?: string[], sort?: number }}
  */
 export function parseCardFields(input) {
   const body = /** @type {any} */ (input) ?? {};
-  /** @type {{ title?: string, body?: string, grp?: string | null }} */
+  /** @type {{ title?: string, body?: string, grp?: string | null, note?: string, forSeats?: string[], sort?: number }} */
   const fields = {};
   if ('title' in body) {
     fields.title = cleanText(body.title);
@@ -91,6 +93,15 @@ export function parseCardFields(input) {
   if ('grp' in body) {
     fields.grp = cleanText(body.grp) || null;
     if (fields.grp && fields.grp.length > LIMITS.group) throw new InputError('group_too_long');
+  }
+  if ('note' in body) {
+    fields.note = cleanBody(body.note);
+    if (fields.note.length > LIMITS.note) throw new InputError('note_too_long');
+  }
+  if ('forSeats' in body) fields.forSeats = idList(body.forSeats, 50); // the room drops ids that aren't its seats
+  if ('sort' in body) {
+    if (typeof body.sort !== 'number' || !Number.isFinite(body.sort)) throw new InputError('bad_sort');
+    fields.sort = body.sort;
   }
   return fields;
 }
