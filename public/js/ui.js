@@ -96,13 +96,28 @@ const ICONS = {
     ['rect', { x: 17.5, y: 13.5, width: 3, height: 2, fill: true }],
     ['rect', { x: 13.5, y: 18.5, width: 2, height: 2, fill: true }],
   ],
+  // Three sliders: "settings" without the fiddly detail of a cog.
+  settings: [
+    ['line', { x1: 4, y1: 6, x2: 20, y2: 6, 'stroke-linecap': 'round' }],
+    ['line', { x1: 4, y1: 12, x2: 20, y2: 12, 'stroke-linecap': 'round' }],
+    ['line', { x1: 4, y1: 18, x2: 20, y2: 18, 'stroke-linecap': 'round' }],
+    ['circle', { cx: 9, cy: 6, r: 2.4, fill: true }],
+    ['circle', { cx: 15.5, cy: 12, r: 2.4, fill: true }],
+    ['circle', { cx: 7.5, cy: 18, r: 2.4, fill: true }],
+  ],
+  // A framed picture: sun and hills.
+  image: [
+    ['rect', { x: 3.5, y: 4.5, width: 17, height: 15, rx: 2 }],
+    ['circle', { cx: 9, cy: 9.5, r: 1.7, fill: true }],
+    ['polyline', { points: '4,17.5 9.5,12.5 13.5,16 16,13.5 20,17', 'stroke-linejoin': 'round' }],
+  ],
 };
 
-/** @param {keyof typeof ICONS} name */
-export function icon(name) {
+/** @param {keyof typeof ICONS} name @param {number} [size] */
+export function icon(name, size = 22) {
   const ns = 'http://www.w3.org/2000/svg';
   const svg = document.createElementNS(ns, 'svg');
-  for (const [k, v] of Object.entries({ viewBox: '0 0 24 24', width: 22, height: 22, 'aria-hidden': 'true', class: 'icon-svg' })) {
+  for (const [k, v] of Object.entries({ viewBox: '0 0 24 24', width: size, height: size, 'aria-hidden': 'true', class: 'icon-svg' })) {
     svg.setAttribute(k, String(v));
   }
   for (const [tag, attrs] of ICONS[name]) {
