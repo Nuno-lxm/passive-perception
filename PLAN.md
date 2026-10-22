@@ -518,7 +518,7 @@ Asked for after the first table test, to make reveals quicker mid-game:
 
 ### M2: public launch
 
-- Landing page (one sentence, demo GIF, Create / Join, self-host link) + privacy page, EN + PT.
+- ✅ Landing page (one sentence, how it works, why it's different, Create / Join, footer links; demo GIF slot for launch) + privacy page, EN + PT. Who runs the instance (name, contact email, repo link) lives in `public/site.js`. **Before launch: replace its `[PLACEHOLDER]` values.** Self-hosted copies skip the introduction and show a "run by whoever set it up" privacy notice.
 - ✅ 60-day expiry (a Durable Object alarm per room; an hourly sweep on the Node host, `ROOM_EXPIRY_DAYS`, 0 = never) + "if nobody uses it, it goes on…" on the Room tab; *Delete room* (type the code to confirm); *Leave room*.
 - ✅ **Export / import a campaign** (moved here from M3: once rooms delete themselves, DMs need a way to keep their prep).
   - **Export** (Room → *Export campaign*): one `.json` file with the room name, seat names, cards, groups and images

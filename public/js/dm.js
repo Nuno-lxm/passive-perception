@@ -1042,6 +1042,7 @@ function settingsPane() {
       h('small', null, wake.supported ? t('settings.keepAwakeHint') : t('settings.noKeepAwake'))),
     themeField('dm-theme', t('settings.theme'), (theme) => t(`theme.${theme}`), storage),
     h('div.field', null, h('label', { for: 'dm-language' }, t('settings.language')), language),
+    h('p', null, h('a', { href: '/privacy' }, t('settings.privacy'))),
   );
 }
 

@@ -413,6 +413,7 @@ function openSettings() {
       h('small', null, wake.supported ? t('settings.keepAwakeHint') : t('settings.noKeepAwake'))),
     themeField('theme', t('settings.theme'), (theme) => t(`theme.${theme}`), storage),
     h('div.field', null, h('label', { for: 'language' }, t('settings.language')), language),
+    h('p', null, h('a', { href: '/privacy' }, t('settings.privacy'))),
     h('button.danger', {
       type: 'button',
       onclick: async () => {
