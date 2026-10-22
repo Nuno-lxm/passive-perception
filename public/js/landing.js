@@ -3,12 +3,19 @@
 import { errorText, LANGUAGES, lang, setLanguage, translatePage } from './i18n.js';
 import { api } from './net.js';
 import { formatRoomCode } from './room-code.js';
+import { config } from '../config.js';
+import { site } from '../site.js';
 import { normalizeRoomCode } from './room-code.js';
 import * as storage from './storage.js';
 import { $, h, themeField } from './ui.js';
 import { t } from './i18n.js';
 
 translatePage();
+
+// Links from site.js; a self-hosted copy skips the introduction and goes straight to joining and creating.
+/** @type {HTMLAnchorElement} */ ($('#repo-link')).href = site.repoUrl;
+/** @type {HTMLAnchorElement} */ ($('#selfhost-link')).href = `${site.repoUrl}#run-your-own`;
+if (config.mode === 'local') for (const el of document.querySelectorAll('.marketing')) /** @type {HTMLElement} */ (el).hidden = true;
 
 const language = /** @type {HTMLSelectElement} */ ($('#language'));
 language.replaceChildren(...LANGUAGES.map((l) => h('option', { value: l.code, selected: l.code === lang }, l.name)));

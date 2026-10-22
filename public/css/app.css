@@ -292,6 +292,20 @@ label { font-weight: 700; font-size: 0.95rem; }
 .screen > h1 { font-size: 2rem; }
 .landing .screen > h1 { font-size: 2.6rem; margin-bottom: 0; }
 .tagline { font: italic 1.25rem/1.45 var(--serif); color: var(--muted); }
+/* Landing extras */
+.steps { margin: 0; padding-left: 1.4em; display: flex; flex-direction: column; gap: 10px; }
+.steps li::marker { color: var(--accent); font-weight: 700; }
+.features { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 12px; }
+.features li { border-left: 2px solid var(--accent); padding-left: 12px; }
+.steps strong, .features strong { font-family: var(--serif); font-size: 1.08rem; }
+.footer-links { display: flex; flex-wrap: wrap; gap: 6px 18px; margin-top: 28px; font-size: 0.95rem; }
+
+/* Long text (privacy page) */
+.prose { max-width: 40rem; }
+.prose article { line-height: 1.6; }
+.prose h2 { margin-top: 2em; }
+.prose ul { padding-left: 1.2em; display: flex; flex-direction: column; gap: 8px; }
+
 .from-file { margin-top: 4px; }
 .from-file summary { cursor: pointer; color: var(--accent); }
 .from-file[open] { display: flex; flex-direction: column; gap: 10px; }
