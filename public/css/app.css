@@ -1,7 +1,7 @@
 /* Tabletop Whisperer themes. Everything visual is a variable on :root, so a theme is a set of values.
    Candlelit (default): warm and dark for a dim table; umber wood, parchment notes, one candle-amber accent,
    Alegreya for anything read and Alegreya Sans for controls (served from here, not a CDN).
-   Daylight: light and plain; see :root[data-theme="daylight"]. js/theme.js picks the theme before the page paints. */
+   Light and Dark: plain; see :root[data-theme="light"] / "dark". js/theme.js picks the theme before the page paints. */
 
 @font-face { font-family: "Alegreya"; src: url("/fonts/alegreya-latin-wght-normal.woff2") format("woff2"); font-weight: 400 900; font-style: normal; font-display: swap; }
 @font-face { font-family: "Alegreya"; src: url("/fonts/alegreya-latin-wght-italic.woff2") format("woff2"); font-weight: 400 900; font-style: italic; font-display: swap; }
@@ -60,12 +60,20 @@
   color-scheme: dark;
 }
 
-/* Daylight: a light, plain theme. Grey page, white cards, near-black text, one crimson accent,
-   a dark top bar and the device's own sans-serif. */
-:root[data-theme="daylight"] {
+/* Light and Dark: the plain pair. Flat cards, one crimson accent, a dark top bar with a crimson line,
+   and the device's own sans-serif. Shared shape first, then each one's colours. */
+:root[data-theme="light"], :root[data-theme="dark"] {
   --serif: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
   --sans: var(--serif);
+  --page-bg: var(--bg);
+  --bar-border: 3px solid var(--accent);
+  --note-bg: var(--parchment);
+  --note-tilt: 0deg;
+  --note-link: var(--accent);
+}
 
+/* Light: grey page, white cards, near-black text. */
+:root[data-theme="light"] {
   --bg: #f2f2f4;
   --bg-deep: #e8e8eb;
   --surface: #ffffff;
@@ -87,24 +95,58 @@
   --offline: #a3a3ac;
 
   --field-bg: #ffffff;
-  --page-bg: var(--bg);
   --bar-bg: #1f1f23;
   --bar-text: #ffffff;
   --bar-muted: #b4b4bc;
-  --bar-border: 3px solid var(--accent);
   --accent-border: #a51f25;
-  --note-bg: #ffffff;
   --note-shadow: 0 0 0 1px var(--line), 0 1px 3px rgba(20, 20, 30, 0.08);
-  --note-tilt: 0deg;
   --note-line: var(--line-strong);
   --glow: rgba(192, 38, 45, 0.28);
   --done: #23914d;
-  --note-link: var(--accent);
   --shade: #ececef;
   --shade-2: #ffffff;
   --backdrop: rgba(20, 20, 26, 0.45);
   --shadow: 0 16px 48px rgba(20, 20, 30, 0.22);
   color-scheme: light;
+}
+
+/* Dark: Light's layout in dark greys, close to how Dark Reader renders it. The crimson is a little brighter
+   so it holds its contrast on dark surfaces. */
+:root[data-theme="dark"] {
+  --bg: #181a1b;
+  --bg-deep: #131516;
+  --surface: #1f2123;
+  --surface-2: #26292b;
+  --line: #35393b;
+  --line-strong: #474c4f;
+  --text: #e6e3df;
+  --muted: #a39d94;
+  --accent: #d8434a;
+  --accent-ink: #ffffff;
+  --accent-soft: rgba(216, 67, 74, 0.12);
+  --parchment: #1f2123;
+  --parchment-edge: #35393b;
+  --ink: #e6e3df;
+  --ink-muted: #a39d94;
+  --danger: #ef6b5f;
+  --online: #4cc47a;
+  --away: #e0a52e;
+  --offline: #6f7477;
+
+  --field-bg: #131516;
+  --bar-bg: #0f1011;
+  --bar-text: #f1efec;
+  --bar-muted: #a39d94;
+  --accent-border: #b5323a;
+  --note-shadow: 0 0 0 1px var(--line);
+  --note-line: var(--line-strong);
+  --glow: rgba(216, 67, 74, 0.35);
+  --done: #4cc47a;
+  --shade: #1c1e20;
+  --shade-2: #1f2123;
+  --backdrop: rgba(0, 0, 0, 0.6);
+  --shadow: 0 16px 48px rgba(0, 0, 0, 0.55);
+  color-scheme: dark;
 }
 
 * { box-sizing: border-box; }

@@ -8,11 +8,13 @@
   } catch (e) {
     // storage blocked: use the default
   }
+  if (choice === 'daylight') choice = 'light'; // renamed
   var theme = choice === 'auto'
-    ? (matchMedia('(prefers-color-scheme: light)').matches ? 'daylight' : 'candlelit')
+    ? (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark')
     : choice;
   document.documentElement.dataset.theme = theme;
   document.documentElement.dataset.themeChoice = choice;
   var meta = document.querySelector('meta[name="theme-color"]');
-  if (meta) meta.setAttribute('content', theme === 'daylight' ? '#1f1f23' : '#1c1612');
+  var bars = { candlelit: '#1c1612', light: '#1f1f23', dark: '#0f1011' };
+  if (meta) meta.setAttribute('content', bars[theme] || bars.candlelit);
 })();

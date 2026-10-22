@@ -161,7 +161,8 @@ export function screenWakeLock() {
  * @param {{ prefs: () => { theme?: string }, savePrefs: (p: { theme: string }) => void }} storage
  */
 export function themeField(id, label, optionLabel, storage) {
-  const current = storage.prefs().theme ?? 'candlelit';
+  const saved = storage.prefs().theme ?? 'candlelit';
+  const current = saved === 'daylight' ? 'light' : saved; // renamed
   const select = /** @type {HTMLSelectElement} */ (h('select', { id },
     ...THEMES.map((theme) => h('option', { value: theme, selected: theme === current }, optionLabel(theme)))));
   select.addEventListener('change', () => {
@@ -171,19 +172,20 @@ export function themeField(id, label, optionLabel, storage) {
   return h('div.field', null, h('label', { for: id }, label), select);
 }
 
-/** The themes a device can pick; 'auto' follows the device's light/dark setting. */
-export const THEMES = ['candlelit', 'daylight', 'auto'];
+/** The themes a device can pick; 'auto' follows the device's light/dark setting (Light or Dark). */
+export const THEMES = ['candlelit', 'light', 'dark', 'auto'];
+const BAR_COLOURS = { candlelit: '#1c1612', light: '#1f1f23', dark: '#0f1011' };
 
 /**
  * Switches theme now (js/theme.js applies it on page load). Saved per device.
- * @param {string} choice  'candlelit' | 'daylight' | 'auto'
+ * @param {string} choice  'candlelit' | 'light' | 'dark' | 'auto'
  */
 export function applyTheme(choice) {
   const light = matchMedia('(prefers-color-scheme: light)').matches;
-  const theme = choice === 'auto' ? (light ? 'daylight' : 'candlelit') : choice;
+  const theme = choice === 'auto' ? (light ? 'light' : 'dark') : choice;
   document.documentElement.dataset.theme = theme;
   document.documentElement.dataset.themeChoice = choice;
-  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', theme === 'daylight' ? '#1f1f23' : '#1c1612');
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', BAR_COLOURS[/** @type {keyof BAR_COLOURS} */ (theme)] ?? BAR_COLOURS.candlelit);
 }
 
 // "Match this device" follows the device when it switches between light and dark.
