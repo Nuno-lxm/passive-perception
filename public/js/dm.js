@@ -6,7 +6,7 @@ import { prepareImage } from './image-prep.js';
 import { api, connectRoom, imageUrl } from './net.js';
 import { formatRoomCode, normalizeRoomCode } from './room-code.js';
 import * as storage from './storage.js';
-import { $, closeButton, copyText, h, openDialog, qrSvg, screenWakeLock, snackbar, themeField } from './ui.js';
+import { $, closeButton, copyText, h, icon, openDialog, qrSvg, screenWakeLock, snackbar, themeField } from './ui.js';
 import { openViewer } from './viewer.js';
 
 /**
@@ -194,7 +194,8 @@ function buildShell() {
     h('header.bar', null,
       h('div.titles', null, title, code),
       h('span.status', { role: 'status' }),
-      h('button.icon', { type: 'button', 'aria-label': t('dm.showJoin'), onclick: showJoin }, '▦')),
+      h('button.join-button', { type: 'button', 'aria-label': t('dm.showJoin'), title: t('dm.showJoin'), onclick: showJoin },
+        icon('qr'), h('span', null, t('dm.join')))),
     claims,
     h('main.dm-panes', null, tablePane(), cardsPane(), roomPane(), settingsPane(), detailPane()),
     tabs,

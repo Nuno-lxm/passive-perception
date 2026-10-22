@@ -91,6 +91,7 @@ export default {
   'dm.claim': '{name} quer entrar num novo dispositivo.',
   'dm.approve': 'Aprovar',
   'dm.deny': 'Recusar',
+  'dm.join': 'Entrar',
   'dm.showJoin': 'Mostrar código de entrada',
   'dm.joinTitle': 'Os jogadores entram aqui',
   'dm.address': 'Endereço que os jogadores usam',
