@@ -9,7 +9,8 @@
   "migrations": [{ "tag": "v1", "new_sqlite_classes": ["RoomDO"] }],
   // Keep room data in the EU. Changing this later strands existing rooms (their ids depend on it).
   // Local workerd does not implement jurisdictions, so `pnpm dev:cf` clears it.
-  "vars": { "DO_JURISDICTION": "eu" },
+  // Rooms unused this many days delete themselves (an alarm in each room's Durable Object).
+  "vars": { "DO_JURISDICTION": "eu", "ROOM_EXPIRY_DAYS": "60" },
   "ratelimits": [
     { "name": "JOIN_LIMIT", "namespace_id": "1001", "simple": { "limit": 20, "period": 60 } },
     { "name": "CREATE_LIMIT", "namespace_id": "1003", "simple": { "limit": 3, "period": 60 } }
@@ -21,7 +22,7 @@
     "staging": {
       "name": "tabletop-whisperer-staging",
       "durable_objects": { "bindings": [{ "name": "ROOM", "class_name": "RoomDO" }] },
-      "vars": { "DO_JURISDICTION": "eu" },
+      "vars": { "DO_JURISDICTION": "eu", "ROOM_EXPIRY_DAYS": "60" },
       "ratelimits": [
         { "name": "JOIN_LIMIT", "namespace_id": "1002", "simple": { "limit": 20, "period": 60 } },
         { "name": "CREATE_LIMIT", "namespace_id": "1004", "simple": { "limit": 3, "period": 60 } }

@@ -9,7 +9,7 @@ const DYNAMIC = {
   'dm.tab.': ['table', 'cards', 'room', 'settings'],
   'presence.': ['online', 'away', 'offline', 'unclaimed'],
   'status.': ['connecting', 'open', 'offline', 'stopped'],
-  'signedOut.': ['moved', 'released', 'removed', 'left', 'other'],
+  'signedOut.': ['moved', 'released', 'removed', 'left', 'other', 'roomDeleted'],
   'theme.': ['candlelit', 'light', 'dark', 'auto'],
   'dm.filter.': ['all', 'unrevealed', 'revealed'],
   'import.': ['noCards', 'bodyTooLong', 'noteTooLong', 'tooMany', 'unknownPlayer', 'strayText', 'titleShortened', 'groupShortened'],

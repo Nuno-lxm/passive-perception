@@ -22,7 +22,14 @@ export class RoomDO extends DurableObject {
     const sockets = {
       all: () => ctx.getWebSockets().filter((ws) => ws.readyState === WebSocket.OPEN).map((ws) => this.conn(ws)),
     };
-    this.room = new Room(store, sockets);
+    this.room = new Room(store, sockets, {
+      expiryDays: env.ROOM_EXPIRY_DAYS === undefined ? 60 : Number(env.ROOM_EXPIRY_DAYS),
+      setAlarm: (at) => void storage.setAlarm(at),
+      destroy: async () => {
+        await storage.deleteAlarm();
+        await storage.deleteAll(); // the room's whole database, images included
+      },
+    });
     // Clients send "ping" every 25 s; Cloudflare answers "pong" without waking this object.
     ctx.setWebSocketAutoResponse(new WebSocketRequestResponsePair('ping', 'pong'));
   }
@@ -36,6 +43,11 @@ export class RoomDO extends DurableObject {
       return new Response(null, { status: 101, webSocket: client });
     }
     return this.room.handle(request);
+  }
+
+  /** The expiry alarm set by the room (see Room.scheduleExpiry). */
+  async alarm() {
+    await this.room.onAlarm();
   }
 
   /** @param {WebSocket} ws @param {string | ArrayBuffer} message */

@@ -15,7 +15,7 @@ let code = null;
 /** @type {ReturnType<typeof connectRoom> | null} */
 let socket = null;
 
-function start() {
+async function start() {
   const query = new URLSearchParams(location.search);
   const fragment = new URLSearchParams(location.hash.slice(1));
   code = normalizeRoomCode(fragment.get('r') ?? query.get('r'));
@@ -24,8 +24,19 @@ function start() {
 
   if (code && linkSecret) return redeemLink(code, linkSecret);
   if (!code) return showCodeEntry();
-  if (storage.seats()[code]) return showFeed();
+  if (storage.seats()[code]) {
+    // The room may have been deleted (by the DM, or after a long time unused) since this phone was last here.
+    if ((await api(`/rooms/${code}`)).status === 404) return roomGone(code);
+    return showFeed();
+  }
   return showSeatPicker();
+}
+
+/** @param {string} roomCode */
+async function roomGone(roomCode) {
+  await forgetLocal(roomCode);
+  wake.set(false);
+  screen(formatRoomCode(roomCode), h('p', null, t('signedOut.roomDeleted')), h('a.button', { href: '/play' }, t('join.otherCode')));
 }
 
 /** @param {string} title @param {...(Node | string | null | false)} content */
@@ -424,6 +435,7 @@ async function forgetLocal(roomCode) {
 /** @param {string} reason */
 async function signedOut(reason) {
   const roomCode = /** @type {string} */ (code);
+  if (reason === 'roomDeleted') return roomGone(roomCode);
   await forgetLocal(roomCode);
   wake.set(false);
   const key = ['moved', 'released', 'removed', 'left'].includes(reason) ? `signedOut.${reason}` : 'signedOut.other';

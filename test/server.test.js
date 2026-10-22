@@ -48,4 +48,13 @@ test('Node host serves the app and the API', async (t) => {
   assert.equal(readdirSync(join(dataDir, 'rooms')).filter((f) => f.endsWith('.sqlite')).length, 1, 'no file for a guessed code');
 
   await runSmoke(base);
+
+  // Deleting a room removes its file (and SQLite's side files) from disk.
+  const made = await (await fetch(`${base}/api/rooms`, {
+    method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ name: 'Gone', seats: ['Ana'] }),
+  })).json();
+  const del = await fetch(`${base}/api/rooms/${made.code}/room`, { method: 'DELETE', headers: { authorization: `Bearer ${made.adminKey}` } });
+  assert.equal(del.status, 200);
+  assert.ok(!readdirSync(join(dataDir, 'rooms')).some((f) => f.startsWith(made.code)), 'room files deleted');
+  assert.equal((await fetch(`${base}/api/rooms/${made.code}`)).status, 404);
 });

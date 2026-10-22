@@ -2,7 +2,7 @@
 // Self-hosted Tabletop Whisperer: serves public/ and /api/* from one Node process.
 // Data: DATA_DIR/rooms/<CODE>.sqlite, one file per room. Port: PORT (default 8080).
 import { createServer } from 'node:http';
-import { existsSync, mkdirSync } from 'node:fs';
+import { existsSync, mkdirSync, readdirSync, rmSync } from 'node:fs';
 import { networkInterfaces } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -16,14 +16,16 @@ import { findAsset, readHeadersFile } from './static.js';
 const PUBLIC_DIR = resolve(dirname(fileURLToPath(import.meta.url)), '../../public');
 const MAX_BODY = 2 * 1024 * 1024;
 const HEARTBEAT = 30 * 1000; // drop sockets whose phone vanished without closing them
+const EXPIRY_SWEEP = 60 * 60 * 1000; // check for rooms unused for ROOM_EXPIRY_DAYS once an hour
 
 /** Simple in-memory rate limits, per client IP: [requests, window in ms]. */
 const RATE_LIMITS = { create: [5, 60 * 60 * 1000], join: [20, 60 * 1000] };
 
 /**
- * @param {{ dataDir: string, port: number, host?: string }} options
+ * @param {{ dataDir: string, port: number, host?: string, expiryDays?: number }} options
+ *   expiryDays: delete rooms unused this long (0 = keep forever). Default 60, like the hosted version.
  */
-export function startServer({ dataDir, port, host = '0.0.0.0' }) {
+export function startServer({ dataDir, port, host = '0.0.0.0', expiryDays = 60 }) {
   const roomsDir = join(dataDir, 'rooms');
   mkdirSync(roomsDir, { recursive: true });
   const securityHeaders = readHeadersFile(join(PUBLIC_DIR, '_headers'));
@@ -39,7 +41,17 @@ export function startServer({ dataDir, port, host = '0.0.0.0' }) {
       if (!create && !existsSync(file)) return null;
       /** @type {Set<import('../core/sockets.js').Conn>} */
       const conns = new Set();
-      entry = { room: new Room(openStore(file), { all: () => [...conns] }), conns };
+      const store = openStore(file);
+      const room = new Room(store, { all: () => [...conns] }, {
+        expiryDays,
+        // No per-room timers here: the hourly sweep below asks every room.
+        destroy: () => {
+          store.close();
+          for (const suffix of ['', '-wal', '-shm']) rmSync(`${file}${suffix}`, { force: true });
+          rooms.delete(code);
+        },
+      });
+      entry = { room, conns };
       rooms.set(code, entry);
     }
     return entry;
@@ -157,6 +169,19 @@ export function startServer({ dataDir, port, host = '0.0.0.0' }) {
     });
   });
 
+  // Expiry: ask every room whether it has gone unused for too long (rooms decide; see Room.onAlarm).
+  const sweep = async () => {
+    if (expiryDays <= 0) return;
+    for (const file of readdirSync(roomsDir).filter((f) => f.endsWith('.sqlite'))) {
+      const entry = openRoom(file.slice(0, -'.sqlite'.length), false);
+      if (entry && !entry.conns.size) await entry.room.onAlarm().catch((error) => console.error(error));
+    }
+  };
+  const sweeper = setInterval(sweep, EXPIRY_SWEEP);
+  sweeper.unref();
+  sweep();
+  server.on('close', () => clearInterval(sweeper));
+
   server.listen(port, host);
   return server;
 }
@@ -209,7 +234,8 @@ function configScript(/** @type {number} */ port) {
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const port = Number(process.env.PORT ?? 8080);
   const dataDir = resolve(process.env.DATA_DIR ?? 'data');
-  startServer({ dataDir, port });
+  const expiryDays = Number(process.env.ROOM_EXPIRY_DAYS ?? 60);
+  startServer({ dataDir, port, expiryDays });
   console.log(`Tabletop Whisperer on http://localhost:${port}  (data: ${dataDir})`);
   if (process.env.PUBLIC_URL) console.log(`  players join at: ${process.env.PUBLIC_URL}`);
   else if (existsSync('/.dockerenv')) {
