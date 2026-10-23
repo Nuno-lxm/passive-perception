@@ -3,6 +3,6 @@
 export const site = {
   operatorName: '[OPERATOR NAME]',
   contactEmail: '[CONTACT EMAIL]',
-  repoUrl: 'https://github.com/[GITHUB USER]/tabletop-whisperer',
+  repoUrl: 'https://github.com/Nuno-lxm/tabletop-whisperer',
   privacyUpdated: '2026-10-23',
 };

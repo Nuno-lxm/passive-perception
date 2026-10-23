@@ -4,6 +4,11 @@
   "private": true,
   "description": "Pass secret notes to players at the table, from the DM's phone to theirs. No app, no accounts.",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Nuno-lxm/tabletop-whisperer"
+  },
+  "homepage": "https://tabletop-whisperer.nunolxm-jogos.workers.dev",
   "type": "module",
   "engines": {
     "node": ">=22.13"

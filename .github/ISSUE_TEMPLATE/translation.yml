@@ -1,0 +1,14 @@
+name: Translation
+description: Add or improve a language
+labels: [translation]
+body:
+  - type: input
+    attributes:
+      label: Language
+      placeholder: e.g. Português (Brasil), Español, Deutsch
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: What would you like to change or add?
+      description: For a new language, copy public/js/locales/en.js, translate the text on the right, and open a pull request. Or describe the wording you'd improve.

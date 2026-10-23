@@ -531,7 +531,11 @@ Asked for after the first table test, to make reveals quicker mid-game:
 - ✅ "Report a problem" in the player's Settings (a bug or problem with the app, or a content problem: pick one of your whispers to attach a copy of it, or "something else"; not a button on every whisper: this is played face to face) + public form (`/report`, linked from the landing page and privacy page) + `/admin` (read reports with a snapshot of the card, freeze / unfreeze / delete the room, close / delete reports). Reports live in one `AdminDO` (Node: `data/admin.sqlite`); `/api/admin/*` needs `ADMIN_TOKEN` (a wrangler secret; on Node an env var, which also turns reporting on). Operator routes in a room need both the router's path check and a marker header only the admin router sets. Closed reports are deleted after 90 days. **Stats** on `/admin`: active rooms, rooms, storage used of the free 5 GB, open reports, and 30-day bar charts of reveals, rooms created and players joining (rooms send anonymous events to the admin store).
 - ⏸ **Deferred (decided 2026-10-23):** global storage cap, strict daily room-creation limits, "busy today" banners. Already in place meanwhile: per-IP rate limits (create / join / report), 50 MB of images per room, 60-day expiry, storage figure on `/admin`, and Worker errors mapped to `over_capacity`.
 - Web Analytics on the landing and privacy pages.
-- GitHub Action building the multi-arch Docker image; *Deploy to Cloudflare* button; README.
+- ✅ Public repo prep: README (with the *Deploy to Cloudflare* button), SECURITY.md, issue templates.
+  **CI/CD** (`.github/workflows/`): every push / PR runs the tests, a dry-run Cloudflare build and a Docker build;
+  a push to `main` that passes deploys **staging**; publishing a GitHub **release** deploys the **public site** and
+  publishes the multi-arch Docker image to GHCR. The release job refuses to run while `public/site.js` still has
+  placeholders.
 - Accessibility pass (labels, focus, contrast, screen reader on the feed) and a review of the pt-PT strings by a native speaker at your table.
 
 ### M3+: later, if people want it

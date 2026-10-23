@@ -1,0 +1,21 @@
+name: Bug
+description: Something doesn't work as it should
+labels: [bug]
+body:
+  - type: textarea
+    attributes:
+      label: What happened?
+      description: What you did, what you expected, and what happened instead.
+    validations:
+      required: true
+  - type: input
+    attributes:
+      label: Device and browser
+      placeholder: e.g. Pixel 9a, Chrome 141 · iPhone 15, Safari
+  - type: dropdown
+    attributes:
+      label: Where
+      options: [The public site, Self-hosted (Docker / Node), Self-hosted (my own Cloudflare)]
+  - type: markdown
+    attributes:
+      value: "Please don't paste DM links or personal links here: they work like passwords."
