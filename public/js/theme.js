@@ -2,9 +2,9 @@
 // A classic script in <head> (not a module, which would run too late); the CSP forbids inline scripts.
 // The theme switch in Settings (ui.js → applyTheme) uses the same rules.
 (function () {
-  var choice = 'candlelit';
+  var choice = 'auto'; // default: follow the device's light/dark setting
   try {
-    choice = JSON.parse(localStorage.getItem('whisperer.prefs') || '{}').theme || 'candlelit';
+    choice = JSON.parse(localStorage.getItem('whisperer.prefs') || '{}').theme || 'auto';
   } catch (e) {
     // storage blocked: use the default
   }

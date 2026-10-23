@@ -1,5 +1,5 @@
 // @ts-check
-// The privacy page: shows the text in the current language and fills in who runs this copy (site.js).
+// The privacy page: shows the text in the current language and fills in links from site.js.
 import { config } from '../config.js';
 import { site } from '../site.js';
 import { lang, translatePage } from './i18n.js';
@@ -15,9 +15,5 @@ if (config.mode === 'local') {
     const key = /** @type {keyof typeof site} */ (/** @type {HTMLElement} */ (el).dataset.site);
     if (el instanceof HTMLAnchorElement) el.href = site[key];
     else el.textContent = site[key];
-  }
-  for (const el of document.querySelectorAll('a[data-site-email]')) {
-    /** @type {HTMLAnchorElement} */ (el).href = `mailto:${site.contactEmail}`;
-    el.textContent = site.contactEmail;
   }
 }
