@@ -2,7 +2,7 @@
 
 **Pass secret notes to players at the table, from the DM's phone to theirs. No app, no accounts.**
 
-When only some players pass a Perception check, the DM taps their names and they read it on their phone,
+When only some players pass a Perception check or any other situation where only some of the people at the table should learn some information, the DM taps their names and they read it on their phone,
 instead of the DM getting up to whisper or passing paper notes. That's all it does: no chat, no dice, no maps.
 
 **Try it:** https://passive-perception.smokelab.workers.dev · English and Português
@@ -33,9 +33,7 @@ no cookies. See the [privacy page](public/privacy.html).
 
 ## Run your own
 
-Three ways, all free:
-
-### 1. Docker (a laptop at the table, or a home server)
+### 1. Docker
 
 ```bash
 docker run -d --name passive-perception -p 8080:8080 -v perception-data:/data \
@@ -108,7 +106,6 @@ The one rule: `src/core/` never touches Cloudflare or Node APIs, so both hosts s
 
 All text is in [`public/js/locales/`](public/js/locales/). To add a language, copy `en.js`, translate the text on
 the right, add it to `LANGUAGES` in `public/js/i18n.js`, and run `pnpm test` (it checks every key is there).
-Portuguese from Brazil especially welcome.
 
 ### Releases
 
