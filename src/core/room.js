@@ -3,7 +3,7 @@
 // Cloudflare runs one Room inside each RoomDO; the Node host keeps one Room per database file.
 // The API router forwards /api/rooms/<code>/<path> here as https://room/<path>.
 //
-// Security model (see PLAN.md §5): a player's connection only ever receives cards from feed.js,
+// Security model: a player's connection only ever receives cards from feed.js,
 // which returns what was revealed to that seat. Messages about a card go only to seats that can see it,
 // or that could see it just before (a `remove`).
 import { hasSchema, migrate } from './schema.js';

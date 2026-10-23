@@ -109,7 +109,6 @@ test/         node --test, running the real core on node:sqlite
 ```
 
 The one rule: `src/core/` never touches Cloudflare or Node APIs, so both hosts share it and the tests cover both.
-[PLAN.md](PLAN.md) has the design and the reasoning behind it.
 
 ### Translations
 
