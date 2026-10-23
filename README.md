@@ -59,12 +59,16 @@ Or with compose: `PUBLIC_URL=http://192.168.1.23:8080 docker compose up -d`.
 
 ### 2. Node, without Docker
 
-Node 22.13 or newer (Node 24 recommended):
+Node 22.13 or newer (Node 24 recommended) and [pnpm](https://pnpm.io/installation) (`npm install -g pnpm`):
 
 ```bash
+git clone https://github.com/Nuno-lxm/passive-perception.git
+cd passive-perception
 pnpm install --prod
-pnpm start
+PUBLIC_URL=http://192.168.1.23:8080 pnpm start
 ```
+
+To update later: `git pull && pnpm install --prod`, then restart it. Your rooms are in the `data` folder and are kept.
 
 ### 3. Your own copy on Cloudflare's free plan
 
