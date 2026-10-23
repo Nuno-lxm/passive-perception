@@ -16,6 +16,9 @@ export default {
   'landing.seatsHint': 'Dica: usa nomes das personagens, não nomes reais.',
   'landing.createButton': 'Criar sala',
 
+  'landing.yourRooms': 'As tuas salas',
+  'landing.asDm': 'és o DM',
+  'landing.asPlayer': 'jogas com {name}',
   'landing.howTitle': 'Como funciona',
   'landing.step1': 'Prepara cartas.',
   'landing.step1Text': 'Pistas, documentos, mapas. Ou escreve um sussurro rápido na mesa.',

@@ -293,6 +293,11 @@ label { font-weight: 700; font-size: 0.95rem; }
 .landing .screen > h1 { font-size: 2.6rem; margin-bottom: 0; }
 .tagline { font: italic 1.25rem/1.45 var(--serif); color: var(--muted); }
 /* Landing extras */
+.room-list { display: flex; flex-direction: column; border-top: 1px solid var(--line); }
+.room-link { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 12px 6px; border-bottom: 1px solid var(--line); color: var(--text); text-decoration: none; }
+.room-link:hover { background: var(--surface); }
+.room-name { font: 700 1.15rem/1.25 var(--serif); }
+.room-meta { font-size: 0.85rem; color: var(--muted); white-space: nowrap; }
 .steps { margin: 0; padding-left: 1.4em; display: flex; flex-direction: column; gap: 10px; }
 .steps li::marker { color: var(--accent); font-weight: 700; }
 .features { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 12px; }
