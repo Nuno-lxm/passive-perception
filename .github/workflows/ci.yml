@@ -1,5 +1,7 @@
 # Every push and pull request: tests, a dry-run Cloudflare build and a Docker build.
 # Pushes to main that pass all of that deploy to staging.
+# Changes that only touch docs skip all of it. The jobs are skipped rather than not started, so a pull request's
+# required checks still pass (a path filter under `on:` would leave them waiting forever).
 name: CI
 
 on:
@@ -15,7 +17,34 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      code: ${{ steps.diff.outputs.code }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: Anything besides docs?
+        id: diff
+        run: |
+          # Everything counts as code except these. When the diff can't be worked out (a new branch,
+          # a force push), run everything.
+          DOCS='\.md$|^LICENSE$|^\.github/ISSUE_TEMPLATE/|^\.github/dependabot\.yml$'
+          if files=$(git diff --name-only "$BASE" HEAD 2>/dev/null) && [ -n "$files" ]; then
+            if [ -n "$(grep -vE "$DOCS" <<< "$files")" ]; then code=true; else code=false; fi
+          else
+            code=true
+          fi
+          echo "code=$code" >> "$GITHUB_OUTPUT"
+          echo "Changed files:"; echo "${files:-(unknown)}"; echo "Run the checks: $code"
+          if [ "$code" = false ]; then echo "Only docs changed: tests, builds and the deploy were skipped." >> "$GITHUB_STEP_SUMMARY"; fi
+        env:
+          BASE: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+
   test:
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -30,6 +59,8 @@ jobs:
         run: pnpm wrangler deploy --dry-run --outdir dist
 
   docker:
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7

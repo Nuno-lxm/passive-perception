@@ -120,7 +120,7 @@ the right, add it to `LANGUAGES` in `public/js/i18n.js`, and run `pnpm test` (it
 All in GitHub Actions ([`.github/workflows/`](.github/workflows/)):
 
 - **Every push and pull request:** the tests, a trial Cloudflare build and a Docker build. `main` only takes
-  changes through pull requests that pass.
+  changes through pull requests that pass. Changes to docs alone (Markdown, the license, issue templates) skip it.
 - **Merge to `main`:** deploys the staging copy, then runs the end-to-end secrecy check against it.
 - **Publish a release:** after an approval, deploys the public site (with the same check) and publishes the Docker
   image for amd64 and arm64.
