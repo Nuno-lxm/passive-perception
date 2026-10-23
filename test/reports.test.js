@@ -112,3 +112,36 @@ test('without an admin token there is no reporting and no admin API', async () =
   assert.equal(r.status, 404);
   assert.equal((await handleApi(api('/api/admin/reports'), host)).status, 404);
 });
+
+test('stats: rooms, joins, reveals, storage and open reports, with nothing personal', async () => {
+  const { json, send, room, card, ana } = await setup();
+  await new Promise((resolve) => setTimeout(resolve, 20)); // notifications are fire-and-forget
+  const { status, data } = await json('GET', '/api/admin/stats', undefined, TOKEN);
+  assert.equal(status, 200);
+  assert.equal(data.rooms.total, 1);
+  assert.equal(data.rooms.activeWeek, 1);
+  const today = data.days.at(-1);
+  assert.equal(data.days.length, 30);
+  assert.deepEqual([today.roomsCreated, today.joins, today.reveals], [1, 2, 1]);
+  assert.equal(data.storage.limit, 5_000_000_000);
+  assert.equal(data.reports.open, 0);
+  const text = JSON.stringify(data);
+  for (const leak of ['Ana', 'Bad card', ana, room.adminKey]) assert.ok(!text.includes(leak), `stats contain ${leak}`);
+
+  await json('POST', `/api/rooms/${room.code}/report`, { cardId: card.id, reason: 'other' }, ana);
+  await send(`/api/rooms/${room.code}/room`, { method: 'DELETE', headers: { authorization: `Bearer ${room.adminKey}` } });
+  await new Promise((resolve) => setTimeout(resolve, 20));
+  const after = (await json('GET', '/api/admin/stats', undefined, TOKEN)).data;
+  assert.equal(after.rooms.total, 0, 'deleted rooms leave the registry');
+  assert.equal(after.reports.open, 1);
+  assert.equal((await json('GET', '/api/admin/stats')).status, 401);
+});
+
+test('bug reports: from players or the public form, with a description', async () => {
+  const { json, room } = await setup();
+  assert.equal((await json('POST', '/api/report', { reason: 'bug', roomCode: room.code, note: 'The QR code does not scan on my iPad' })).status, 201);
+  assert.deepEqual((await json('POST', '/api/report', { reason: 'bug', note: '' })).data, { error: 'report_empty' });
+  const { data } = await json('GET', '/api/admin/reports', undefined, TOKEN);
+  assert.equal(data.reports[0].reason, 'bug');
+  assert.equal(data.reports[0].roomCode, room.code);
+});

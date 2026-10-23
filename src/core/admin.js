@@ -8,7 +8,7 @@ import { fail, json, readJson } from './http.js';
 
 const DAY = 24 * 60 * 60 * 1000;
 const KEEP_CLOSED = 90 * DAY;
-export const REPORT_REASONS = ['illegal', 'abuse', 'child', 'other'];
+export const REPORT_REASONS = ['bug', 'illegal', 'abuse', 'child', 'other'];
 
 /** @type {string[][]} */
 const ADMIN_MIGRATIONS = [
@@ -18,7 +18,14 @@ const ADMIN_MIGRATIONS = [
        room_code TEXT, card_id TEXT, reason TEXT NOT NULL, note TEXT NOT NULL DEFAULT '', contact TEXT NOT NULL DEFAULT '',
        snapshot TEXT, status TEXT NOT NULL DEFAULT 'open', closed_at INTEGER)`,
   ],
+  // 2: usage stats. Counts per day and one row per existing room (for storage and "active"). Nothing personal.
+  [
+    `CREATE TABLE days (day TEXT PRIMARY KEY, rooms_created INTEGER NOT NULL DEFAULT 0, reveals INTEGER NOT NULL DEFAULT 0,
+       joins INTEGER NOT NULL DEFAULT 0, rooms_deleted INTEGER NOT NULL DEFAULT 0)`,
+    `CREATE TABLE rooms (code TEXT PRIMARY KEY, created_at INTEGER, last_active_at INTEGER, bytes INTEGER NOT NULL DEFAULT 0)`,
+  ],
 ];
+const STORAGE_LIMIT = 5_000_000_000; // the Durable Objects free tier
 
 /** @param {unknown} value @param {number} max */
 const text = (value, max) => (typeof value === 'string' ? value.normalize('NFC').trim().slice(0, max) : '');
@@ -36,6 +43,8 @@ export class Admin {
     this.store.sql(`DELETE FROM reports WHERE status = 'closed' AND closed_at < ?`, this.store.now() - KEEP_CLOSED);
     let m;
     if (request.method === 'POST' && pathname === '/report') return this.addReport(await readJson(request));
+    if (request.method === 'POST' && pathname === '/event') return this.event(await readJson(request));
+    if (request.method === 'GET' && pathname === '/stats') return this.stats();
     if (request.method === 'GET' && pathname === '/reports') return this.listReports();
     if (request.method === 'POST' && (m = pathname.match(/^\/reports\/([^/]+)\/(close|reopen)$/))) return this.setStatus(m[1], m[2] === 'close');
     if (request.method === 'DELETE' && (m = pathname.match(/^\/reports\/([^/]+)$/))) {
@@ -60,6 +69,55 @@ export class Admin {
       text(body?.contact, 200), body?.snapshot ? JSON.stringify(body.snapshot).slice(0, 20_000) : null,
     );
     return json({ ok: true }, 201);
+  }
+
+  /**
+   * Something happened in a room. Rooms send these themselves (see RoomHooks.notify); they carry no personal data.
+   * @param {any} body  { type: 'created' | 'active' | 'reveal' | 'join' | 'bytes' | 'deleted', code, bytes? }
+   */
+  event(body) {
+    const code = typeof body?.code === 'string' ? body.code.slice(0, 12) : '';
+    const now = this.store.now();
+    const day = new Date(now).toISOString().slice(0, 10);
+    const bump = (/** @type {string} */ column) => {
+      this.store.sql(`INSERT OR IGNORE INTO days (day) VALUES (?)`, day);
+      this.store.sql(`UPDATE days SET ${column} = ${column} + 1 WHERE day = ?`, day);
+    };
+    const room = () => this.store.sql(`INSERT OR IGNORE INTO rooms (code, created_at, last_active_at) VALUES (?, ?, ?)`, code, now, now);
+    switch (body?.type) {
+      case 'created': room(); bump('rooms_created'); break;
+      case 'active': room(); this.store.sql(`UPDATE rooms SET last_active_at = ? WHERE code = ?`, now, code); break;
+      case 'reveal': bump('reveals'); break;
+      case 'join': bump('joins'); break;
+      case 'bytes': room(); this.store.sql(`UPDATE rooms SET bytes = ? WHERE code = ?`, Math.max(0, Number(body.bytes) || 0), code); break;
+      case 'deleted': this.store.sql(`DELETE FROM rooms WHERE code = ?`, code); bump('rooms_deleted'); break;
+      default: return fail('bad_event', 400);
+    }
+    this.store.sql(`DELETE FROM days WHERE day < ?`, new Date(now - 400 * DAY).toISOString().slice(0, 10));
+    return json({ ok: true });
+  }
+
+  /** Numbers for the admin page: rooms, storage, the last 30 days, open reports. */
+  stats() {
+    const now = this.store.now();
+    const [rooms] = this.store.sql(
+      `SELECT count(*) AS total, sum(last_active_at > ?) AS week, sum(last_active_at > ?) AS month, coalesce(sum(bytes), 0) AS bytes FROM rooms`,
+      now - 7 * DAY, now - 30 * DAY,
+    );
+    const since = new Date(now - 29 * DAY).toISOString().slice(0, 10);
+    const rows = new Map(this.store.sql(`SELECT * FROM days WHERE day >= ?`, since).map((d) => [String(d.day), d]));
+    const days = Array.from({ length: 30 }, (_, i) => {
+      const day = new Date(now - (29 - i) * DAY).toISOString().slice(0, 10);
+      const d = rows.get(day);
+      return { day, roomsCreated: Number(d?.rooms_created ?? 0), reveals: Number(d?.reveals ?? 0), joins: Number(d?.joins ?? 0) };
+    });
+    const [{ open }] = this.store.sql(`SELECT count(*) AS open FROM reports WHERE status = 'open'`);
+    return json({
+      rooms: { total: Number(rooms.total), activeWeek: Number(rooms.week ?? 0), activeMonth: Number(rooms.month ?? 0) },
+      storage: { bytes: Number(rooms.bytes), limit: STORAGE_LIMIT },
+      days,
+      reports: { open: Number(open) },
+    });
   }
 
   listReports() {

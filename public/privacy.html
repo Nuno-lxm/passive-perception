@@ -21,122 +21,52 @@
 
     <article lang="en" data-lang="en" hidden>
       <h1>Privacy</h1>
-      <p class="hint">Last updated <span data-site="privacyUpdated"></span></p>
+      <p class="short">No accounts, no ads, no tracking. We keep only what the game needs, players only get what their DM
+        reveals to them, and rooms delete themselves after 60 days without use.</p>
 
-      <p>Tabletop Whisperer lets a game master pass notes to players at the table. It is built to know as little as
-        possible: no accounts, no ads, no tracking cookies, and rooms delete themselves.</p>
-
-      <h2>Who runs it</h2>
-      <p><span data-site="operatorName"></span> runs this service and is responsible for your data
-        (the “controller” under the GDPR). Contact: <a data-site-email href="#"></a>.</p>
-      <p>Copies of Tabletop Whisperer that other people run on their own servers are their responsibility, not covered by this page.</p>
-
-      <h2>What is stored</h2>
-      <ul>
-        <li><strong>For a room:</strong> its name, the player names the DM typed in (we suggest character names), the cards
-          (text, images and the DM's private notes), who each card was revealed to and when, and whether it was delivered, seen or acknowledged.</li>
-        <li><strong>Keys:</strong> the DM link, each player's seat and personal links work like passwords. The server keeps
-          only a scrambled form (a hash) of them, which can't be turned back into the link.</li>
-        <li><strong>Images</strong> are shrunk on the DM's device before upload, which also removes hidden photo data such as GPS location.</li>
-        <li><strong>On your own device</strong> (in your browser's local storage, not cookies): your keys for the rooms you joined,
-          your settings, and a copy of your feed so it shows up instantly. This never leaves your device except to talk to the room.</li>
-      </ul>
-      <p>We don't create accounts, ask for emails, build profiles, sell anything or show ads. Players only ever receive
-        what the DM revealed to them.</p>
-
-      <h2>IP addresses</h2>
-      <p>Like any website, your device's IP address reaches our hosting provider so pages can be delivered. To stop abuse
-        (for example someone guessing room codes), Cloudflare's rate limiter counts requests per IP address for about a minute.
-        We don't store IP addresses.</p>
-
-      <h2>Where it lives</h2>
-      <p>The service runs on Cloudflare, which processes data on our behalf under its standard data processing terms.
-        Room data is stored in the European Union.</p>
-
-      <h2>How long</h2>
-      <ul>
-        <li>A room is <strong>deleted 60 days after it was last used</strong> (opened by the DM or any player), with everything in it.</li>
-        <li>The DM can <strong>delete a room at any time</strong> (Room → Delete room). Deletion is immediate and can't be undone.</li>
-        <li>A player can <strong>leave a room</strong> (Settings → Leave room): their seat is freed and their device forgets the feed.</li>
-      </ul>
-
-      <h2>Reports</h2>
-      <p>Anyone can report content (players: Settings → Report a problem; anyone: the <a href="/report">report form</a>). A report keeps a copy of
-        the reported card's text and a reference to its images, the room code, the reporter's seat name (never shown to the DM),
-        your note and, only if you give it, your email. Only the people running the service see reports. A report is kept
-        until it's handled and then deleted 90 days later. When content looks illegal, we may freeze or delete the room, and
-        we may be required to pass it on to the authorities.</p>
-
-      <h2>Why (legal basis)</h2>
-      <p>We process this data to provide the service you chose to use (GDPR Art. 6(1)(b)), and to keep it safe from abuse and handle reports (our legitimate interest and legal obligations, Art. 6(1)(f) and (c)).</p>
-
-      <h2>Your rights</h2>
-      <p>You can ask to see, correct or delete data about you, or object to its use. The DM of your room can do most of this
-        directly (rename or remove a seat, delete cards or the whole room), so asking them is fastest. Otherwise write to
-        <a data-site-email href="#"></a>. You can also complain to your data protection authority (in Portugal, the CNPD).</p>
-
-      <h2>Changes</h2>
-      <p>If this page changes, the date at the top changes too. The code that does all of this is public: <a data-site="repoUrl" href="#">source code</a>.</p>
+      <dl class="facts">
+        <dt>Who</dt>
+        <dd><span data-site="operatorName"></span> runs this service and is responsible for your data. Contact: <a data-site-email href="#"></a>.</dd>
+        <dt>What</dt>
+        <dd>A room's name, the player names the DM typed, the cards (text, images, the DM's notes) and who got what.
+          Links work like passwords and are stored only in scrambled form. Your browser keeps your own links and settings (no cookies).
+          If you report something, we keep a copy of it with your note.</dd>
+        <dt>Where</dt>
+        <dd>On Cloudflare, in the EU. IP addresses pass through Cloudflare to deliver pages and stop abuse; we don't store them.</dd>
+        <dt>How long</dt>
+        <dd>Until 60 days after the room was last used, or until the DM deletes it. Reports: 90 days after we deal with them.</dd>
+        <dt>Why</dt>
+        <dd>To run the service you chose to use, and to keep it safe from abuse (GDPR art. 6(1)(b) and (f)).</dd>
+        <dt>Your rights</dt>
+        <dd>To see, fix or delete your data, ask your DM (they can delete cards, seats or the whole room) or write to
+          <a data-site-email href="#"></a>. You can also complain to your data protection authority (in Portugal, the CNPD).</dd>
+      </dl>
+      <p class="hint">Last updated <span data-site="privacyUpdated"></span> · <a data-site="repoUrl" href="#">Source code</a> · <a href="/report">Report a problem</a></p>
     </article>
 
     <article lang="pt-PT" data-lang="pt-PT" hidden>
       <h1>Privacidade</h1>
-      <p class="hint">Atualizado a <span data-site="privacyUpdated"></span></p>
+      <p class="short">Sem contas, sem anúncios, sem rastreio. Guardamos só o que o jogo precisa, os jogadores só recebem o
+        que o DM lhes revela, e as salas apagam-se sozinhas ao fim de 60 dias sem uso.</p>
 
-      <p>O Tabletop Whisperer permite a um mestre de jogo passar notas aos jogadores na mesa. Foi feito para saber o
-        mínimo possível: sem contas, sem anúncios, sem cookies de rastreio, e as salas apagam-se sozinhas.</p>
-
-      <h2>Quem o gere</h2>
-      <p><span data-site="operatorName"></span> gere este serviço e é responsável pelos teus dados
-        (o “responsável pelo tratamento” segundo o RGPD). Contacto: <a data-site-email href="#"></a>.</p>
-      <p>As cópias do Tabletop Whisperer que outras pessoas correm nos seus próprios servidores são da responsabilidade delas, e não estão cobertas por esta página.</p>
-
-      <h2>O que é guardado</h2>
-      <ul>
-        <li><strong>Para uma sala:</strong> o nome, os nomes dos jogadores escritos pelo DM (sugerimos nomes de personagens), as cartas
-          (texto, imagens e as notas privadas do DM), a quem cada carta foi revelada e quando, e se foi entregue, vista ou confirmada.</li>
-        <li><strong>Chaves:</strong> o link de DM, o lugar de cada jogador e os links pessoais funcionam como palavras-passe. O servidor guarda
-          apenas uma forma baralhada (um hash), que não pode ser convertida de volta no link.</li>
-        <li><strong>As imagens</strong> são reduzidas no dispositivo do DM antes do envio, o que também remove dados escondidos da foto, como a localização GPS.</li>
-        <li><strong>No teu próprio dispositivo</strong> (no armazenamento local do navegador, não em cookies): as tuas chaves das salas onde entraste,
-          as tuas definições e uma cópia do teu feed para aparecer logo. Isto nunca sai do teu dispositivo, a não ser para falar com a sala.</li>
-      </ul>
-      <p>Não criamos contas, não pedimos emails, não fazemos perfis, não vendemos nada nem mostramos anúncios. Os jogadores só
-        recebem o que o DM lhes revelou.</p>
-
-      <h2>Endereços IP</h2>
-      <p>Como em qualquer site, o endereço IP do teu dispositivo chega ao nosso fornecedor de alojamento para as páginas poderem ser entregues.
-        Para travar abusos (por exemplo, alguém a adivinhar códigos de sala), o limitador da Cloudflare conta pedidos por endereço IP durante cerca de um minuto.
-        Não guardamos endereços IP.</p>
-
-      <h2>Onde fica</h2>
-      <p>O serviço corre na Cloudflare, que trata os dados em nosso nome segundo os seus termos padrão de tratamento de dados.
-        Os dados das salas são guardados na União Europeia.</p>
-
-      <h2>Durante quanto tempo</h2>
-      <ul>
-        <li>Uma sala é <strong>apagada 60 dias depois da última utilização</strong> (aberta pelo DM ou por qualquer jogador), com tudo o que tem.</li>
-        <li>O DM pode <strong>apagar uma sala a qualquer momento</strong> (Sala → Apagar sala). É imediato e não pode ser desfeito.</li>
-        <li>Um jogador pode <strong>sair de uma sala</strong> (Definições → Sair da sala): o lugar fica livre e o dispositivo esquece o feed.</li>
-      </ul>
-
-      <h2>Denúncias</h2>
-      <p>Qualquer pessoa pode denunciar conteúdo (jogadores: Definições → Denunciar um problema; qualquer pessoa: o <a href="/report">formulário de denúncia</a>). Uma denúncia guarda
-        uma cópia do texto da carta denunciada e uma referência às suas imagens, o código da sala, o nome do lugar de quem denunciou (nunca mostrado ao DM),
-        a tua nota e, só se o deres, o teu email. Só quem gere o serviço vê as denúncias. Uma denúncia é guardada até ser tratada
-        e depois apagada 90 dias mais tarde. Quando o conteúdo parece ilegal, podemos congelar ou apagar a sala, e podemos
-        ser obrigados a comunicá-lo às autoridades.</p>
-
-      <h2>Porquê (fundamento jurídico)</h2>
-      <p>Tratamos estes dados para prestar o serviço que escolheste usar (RGPD, art. 6.º, n.º 1, al. b)) e para o proteger de abusos e tratar denúncias (interesse legítimo e obrigações legais, als. f) e c)).</p>
-
-      <h2>Os teus direitos</h2>
-      <p>Podes pedir para ver, corrigir ou apagar dados sobre ti, ou opor-te ao seu uso. O DM da tua sala consegue fazer quase tudo
-        diretamente (mudar o nome ou remover um lugar, apagar cartas ou a sala inteira), por isso perguntar-lhe é o mais rápido. Caso contrário, escreve para
-        <a data-site-email href="#"></a>. Também podes apresentar queixa à autoridade de proteção de dados (em Portugal, a CNPD).</p>
-
-      <h2>Alterações</h2>
-      <p>Se esta página mudar, a data no topo também muda. O código que faz tudo isto é público: <a data-site="repoUrl" href="#">código-fonte</a>.</p>
+      <dl class="facts">
+        <dt>Quem</dt>
+        <dd><span data-site="operatorName"></span> gere este serviço e é responsável pelos teus dados. Contacto: <a data-site-email href="#"></a>.</dd>
+        <dt>O quê</dt>
+        <dd>O nome da sala, os nomes dos jogadores escritos pelo DM, as cartas (texto, imagens, notas do DM) e quem recebeu o quê.
+          Os links funcionam como palavras-passe e só são guardados de forma baralhada. O teu navegador guarda os teus links e definições (sem cookies).
+          Se denunciares algo, guardamos uma cópia com a tua nota.</dd>
+        <dt>Onde</dt>
+        <dd>Na Cloudflare, na UE. Os endereços IP passam pela Cloudflare para entregar as páginas e travar abusos; não os guardamos.</dd>
+        <dt>Quanto tempo</dt>
+        <dd>Até 60 dias depois da última utilização da sala, ou até o DM a apagar. Denúncias: 90 dias depois de tratadas.</dd>
+        <dt>Porquê</dt>
+        <dd>Para prestar o serviço que escolheste usar e o proteger de abusos (RGPD, art. 6.º, n.º 1, als. b) e f)).</dd>
+        <dt>Os teus direitos</dt>
+        <dd>Para ver, corrigir ou apagar os teus dados, pede ao teu DM (pode apagar cartas, lugares ou a sala inteira) ou escreve para
+          <a data-site-email href="#"></a>. Também podes apresentar queixa à autoridade de proteção de dados (em Portugal, a CNPD).</dd>
+      </dl>
+      <p class="hint">Atualizado a <span data-site="privacyUpdated"></span> · <a data-site="repoUrl" href="#">Código-fonte</a> · <a href="/report">Denunciar um problema</a></p>
     </article>
   </main>
 </body>

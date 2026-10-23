@@ -14,7 +14,8 @@ export function memoryHost({ adminToken } = {}) {
     room(code, { create }) {
       if (!rooms.has(code)) {
         if (!create) return null;
-        rooms.set(code, new Room(openStore(':memory:')));
+        const notify = admin ? (event) => admin.handle(new Request('https://admin/event', { method: 'POST', body: JSON.stringify(event) })) : undefined;
+        rooms.set(code, new Room(openStore(':memory:'), undefined, { notify }));
       }
       return { fetch: (request) => rooms.get(code).handle(request) };
     },

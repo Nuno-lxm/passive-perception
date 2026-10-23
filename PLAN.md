@@ -369,7 +369,7 @@ A DM uses roughly 50–150 requests per session, which fits easily in the budget
   Non-EU players get ~100 ms more latency, which this app won't notice.
 - **Analytics:** Cloudflare Web Analytics (no cookies) **only on the landing and privacy pages**. Never on room pages, so room URLs and fragments are never collected.
   Usage numbers come from the AdminDO's aggregate counters.
-- **Privacy page:** a short EN + PT page covering who runs it (you, plus a contact email), what's stored, why, for how long,
+- **Privacy page:** a short EN + PT page (a one-line summary, then who / what / where / how long / why / your rights) covering who runs it (you, plus a contact email), what's stored, why, for how long,
   Cloudflare as processor, how to delete, and how reports work. Self-hosted instances show a note saying the operator is whoever runs the server.
 
 ---
@@ -528,7 +528,7 @@ Asked for after the first table test, to make reveals quicker mid-game:
     *Keep who has what* (moving hosts or restoring a backup) or *Start fresh* (run the same prep for another group).
     Seats come in unclaimed, so players join again. Same validation as normal input; images are re-checked.
   - The expiry note on the DM screen links to *Export campaign*. Files move between hosted and self-hosted versions.
-- ✅ "Report a problem" in the player's Settings (pick one of your whispers to attach a copy of it, or "something else"; not a button on every whisper: this is played face to face) + public form (`/report`, linked from the landing page and privacy page) + `/admin` (read reports with a snapshot of the card, freeze / unfreeze / delete the room, close / delete reports). Reports live in one `AdminDO` (Node: `data/admin.sqlite`); `/api/admin/*` needs `ADMIN_TOKEN` (a wrangler secret; on Node an env var, which also turns reporting on). Operator routes in a room need both the router's path check and a marker header only the admin router sets. Closed reports are deleted after 90 days. Aggregate counters: with the limits step.
+- ✅ "Report a problem" in the player's Settings (a bug or problem with the app, or a content problem: pick one of your whispers to attach a copy of it, or "something else"; not a button on every whisper: this is played face to face) + public form (`/report`, linked from the landing page and privacy page) + `/admin` (read reports with a snapshot of the card, freeze / unfreeze / delete the room, close / delete reports). Reports live in one `AdminDO` (Node: `data/admin.sqlite`); `/api/admin/*` needs `ADMIN_TOKEN` (a wrangler secret; on Node an env var, which also turns reporting on). Operator routes in a room need both the router's path check and a marker header only the admin router sets. Closed reports are deleted after 90 days. **Stats** on `/admin`: active rooms, rooms, storage used of the free 5 GB, open reports, and 30-day bar charts of reveals, rooms created and players joining (rooms send anonymous events to the admin store).
 - All rate limits and caps, global storage tally, over-the-limit banners (tested by forcing errors).
 - Web Analytics on the landing and privacy pages.
 - GitHub Action building the multi-arch Docker image; *Deploy to Cloudflare* button; README.

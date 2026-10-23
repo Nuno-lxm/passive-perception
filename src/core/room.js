@@ -30,6 +30,8 @@ const MAX_MESSAGE = 4096;
  * @property {number} [expiryDays]  Delete the room after this many days without use (0 = never). Default 60.
  * @property {(at: number) => void} [setAlarm]  Call onAlarm() at this time. Cloudflare: a DO alarm. Node sweeps instead.
  * @property {() => void | Promise<void>} [destroy]  Remove the room's storage entirely. Default: drop its tables.
+ * @property {(event: { type: string, code: string, bytes?: number }) => void} [notify]
+ *   Tell the admin store (usage stats) something happened. Fire and forget; it must never slow the room down.
  */
 /** @typedef {{ role: 'dm' } | { role: 'player', seat: { id: string, name: string } }} Auth */
 
@@ -187,6 +189,7 @@ export class Room {
       });
     });
     this.scheduleExpiry(now);
+    this.notify('created');
     return json({ code: body.code, adminKey }, 201);
   }
 
@@ -238,6 +241,7 @@ export class Room {
       const token = newSecret();
       this.store.sql(`UPDATE seats SET token_hash = ?, claimed_at = ? WHERE id = ?`, await sha256(token), now, seat.id);
       this.toDms({ t: 'seats', seats: this.dmSeats() });
+      this.notify('join');
       return json({ token, seat: { id: seat.id, name: seat.name } });
     }
 
@@ -306,6 +310,7 @@ export class Room {
    * @param {string} seatId @param {string} reason
    */
   async giveSeat(seatId, reason) {
+    this.notify('join');
     const token = newSecret();
     this.store.sql(`UPDATE seats SET token_hash = ?, claimed_at = ? WHERE id = ?`, await sha256(token), this.store.now(), seatId);
     for (const conn of this.seatConns(seatId)) this.signOutConn(conn, reason);
@@ -426,6 +431,7 @@ export class Room {
       }
       return copy;
     });
+    if (images.length) this.notify('bytes');
     return this.cardChanged(id, 201);
   }
 
@@ -485,6 +491,7 @@ export class Room {
     });
     this.pushToPlayers(cardId, before);
     this.toDms({ t: 'cardRemoved', id: cardId });
+    this.notify('bytes');
     return json({ ok: true });
   }
 
@@ -514,6 +521,7 @@ export class Room {
       this.setMeta('last_reveal_at', now);
     });
     this.touch();
+    this.notify('reveal');
     this.pushToPlayers(cardId, before);
     return this.cardChanged(cardId);
   }
@@ -593,6 +601,7 @@ export class Room {
 
   /** @param {string} cardId @param {number} now */
   imagesChanged(cardId, now) {
+    this.notify('bytes');
     this.store.sql(`UPDATE cards SET content_at = ?, updated_at = ? WHERE id = ?`, now, now, cardId);
     this.pushToPlayers(cardId, seatsSeeing(this.store, cardId));
     this.cardChanged(cardId);
@@ -814,6 +823,21 @@ export class Room {
     for (const conn of this.conns('player')) this.send(conn, build(/** @type {any} */ (conn.meta()).seatId));
   }
 
+  /** @param {'created' | 'active' | 'reveal' | 'join' | 'bytes' | 'deleted'} type */
+  notify(type) {
+    if (!this.hooks.notify) return;
+    try {
+      const event = { type, code: this.meta().code };
+      if (type === 'bytes') {
+        const [{ bytes }] = this.store.sql(`SELECT coalesce(sum(bytes), 0) AS bytes FROM images`);
+        Object.assign(event, { bytes: Number(bytes) });
+      }
+      this.hooks.notify(event);
+    } catch {
+      // stats are best effort
+    }
+  }
+
   /** @returns {Record<string, string>} */
   meta() {
     return Object.fromEntries(this.store.sql(`SELECT key, value FROM meta`).map((row) => [row.key, row.value]));
@@ -830,6 +854,7 @@ export class Room {
     if (now - Number(this.meta().last_active_at ?? 0) > HOUR) {
       this.setMeta('last_active_at', now);
       this.scheduleExpiry(now);
+      this.notify('active');
     }
   }
 
@@ -904,6 +929,7 @@ export class Room {
   importCampaign(body) {
     if (Number(this.meta().import_until ?? 0) < this.store.now()) return fail('import_closed', 403);
     const imported = importBatch(this.store, body, newId);
+    this.notify('bytes');
     return json({ imported });
   }
 
@@ -946,6 +972,7 @@ export class Room {
    * @param {'deleted' | 'expired'} reason
    */
   async deleteRoom(reason) {
+    this.notify('deleted');
     for (const conn of this.sockets.all()) this.signOutConn(conn, 'roomDeleted');
     if (this.hooks.destroy) {
       await this.hooks.destroy();

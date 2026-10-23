@@ -32,6 +32,8 @@ export function startServer({ dataDir, port, host = '0.0.0.0', expiryDays = 60, 
   mkdirSync(roomsDir, { recursive: true });
   const securityHeaders = readHeadersFile(join(PUBLIC_DIR, '_headers'));
 
+  const admin = adminToken ? new Admin(openStore(join(dataDir, 'admin.sqlite'))) : null;
+
   /** @type {Map<string, { room: Room, conns: Set<import('../core/sockets.js').Conn> }>} */
   const rooms = new Map();
 
@@ -46,6 +48,9 @@ export function startServer({ dataDir, port, host = '0.0.0.0', expiryDays = 60, 
       const store = openStore(file);
       const room = new Room(store, { all: () => [...conns] }, {
         expiryDays,
+        notify: (event) => {
+          admin?.handle(new Request('https://admin/event', { method: 'POST', body: JSON.stringify(event) })).catch(() => {});
+        },
         // No per-room timers here: the hourly sweep below asks every room.
         destroy: () => {
           store.close();
@@ -62,7 +67,6 @@ export function startServer({ dataDir, port, host = '0.0.0.0', expiryDays = 60, 
   /** @type {Map<string, { count: number, resetAt: number }>} */
   const counters = new Map();
 
-  const admin = adminToken ? new Admin(openStore(join(dataDir, 'admin.sqlite'))) : null;
 
   /** @type {import('../core/api.js').Host} */
   const apiHost = {
@@ -106,8 +110,10 @@ export function startServer({ dataDir, port, host = '0.0.0.0', expiryDays = 60, 
       } else {
         const asset = await findAsset(PUBLIC_DIR, decodeURIComponent(url.pathname));
         const notFound = asset ? null : await findAsset(PUBLIC_DIR, '/404.html');
+        // Same caching as public/_headers: always check scripts/styles/pages (no-cache), keep fonts for a year.
+        const cache = url.pathname.startsWith('/fonts/') ? 'public, max-age=31536000, immutable' : 'no-cache';
         response = asset
-          ? new Response(new Uint8Array(asset.body), { headers: { 'content-type': asset.type } })
+          ? new Response(new Uint8Array(asset.body), { headers: { 'content-type': asset.type, 'cache-control': cache } })
           : new Response(notFound ? new Uint8Array(notFound.body) : 'Not found', {
               status: 404,
               headers: { 'content-type': notFound?.type ?? 'text/plain; charset=utf-8' },
