@@ -20,12 +20,6 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm test
-      - name: The privacy page names who runs the service
-        run: |
-          if grep -q '\[OPERATOR NAME\]\|\[CONTACT EMAIL\]' public/site.js; then
-            echo "::error file=public/site.js::Fill in operatorName and contactEmail before going live (the privacy page shows them)."
-            exit 1
-          fi
 
   deploy-production:
     needs: test

@@ -407,7 +407,7 @@ A DM uses roughly 50–150 requests per session, which fits easily in the budget
 
 ### Both sides
 
-- **Three themes, picked per device in Settings** (and on the landing page): **Candlelit** (default; dark and warm, umber wood, parchment notes, candle amber, self-hosted Alegreya) and **Light** (plain: grey page, white cards, crimson accent, dark top bar, the device's own sans-serif) and **Dark** (Light's layout in dark greys, close to how Dark Reader renders Light), or *Match device* (Light or Dark from the device setting). `js/theme.js` applies the choice in `<head>` before the page paints. Every colour is a CSS variable, so a theme is one block of values. Body ≥ 17 px, tap targets ≥ 44 px.
+- **Three themes, picked per device in Settings** (and on the landing page): **Candlelit** (default; dark and warm, umber wood, parchment notes, candle amber, self-hosted Alegreya) and **Light** (plain: grey page, white cards, crimson accent, dark top bar, the device's own sans-serif) and **Dark** (Light's layout in dark greys, close to how Dark Reader renders Light), and **Match device** (Light or Dark from the device setting), **the default** since 2026-10-23. `js/theme.js` applies the choice in `<head>` before the page paints. Every colour is a CSS variable, so a theme is one block of values. Body ≥ 17 px, tap targets ≥ 44 px.
 - Respects `safe-area-inset-*` and uses `100dvh`. `overscroll-behavior: contain` stops a swipe from reloading the page by accident.
   Pinch-zoom is never disabled.
 - Respects `prefers-reduced-motion`.
@@ -518,7 +518,7 @@ Asked for after the first table test, to make reveals quicker mid-game:
 
 ### M2: public launch
 
-- ✅ Landing page (one sentence, how it works, why it's different, Create / Join, footer links; demo GIF slot for launch) + privacy page, EN + PT. Who runs the instance (name, contact email, repo link) lives in `public/site.js`. **Before launch: replace its `[PLACEHOLDER]` values.** Self-hosted copies skip the introduction and show a "run by whoever set it up" privacy notice.
+- ✅ Landing page (one sentence, how it works, why it's different, Create / Join, footer links; demo GIF slot for launch) + privacy page, EN + PT. The privacy page names no one (decided 2026-10-23): questions and data requests go through the `/report` form, which has an optional email for replies. Self-hosted copies skip the introduction and show a "run by whoever set it up" privacy notice.
 - ✅ 60-day expiry (a Durable Object alarm per room; an hourly sweep on the Node host, `ROOM_EXPIRY_DAYS`, 0 = never) + "if nobody uses it, it goes on…" on the Room tab; *Delete room* (type the code to confirm); *Leave room*.
 - ✅ **Export / import a campaign** (moved here from M3: once rooms delete themselves, DMs need a way to keep their prep).
   - **Export** (Room → *Export campaign*): one `.json` file with the room name, seat names, cards, groups and images
@@ -534,8 +534,7 @@ Asked for after the first table test, to make reveals quicker mid-game:
 - ✅ Public repo prep: README (with the *Deploy to Cloudflare* button), SECURITY.md, issue templates.
   **CI/CD** (`.github/workflows/`): every push / PR runs the tests, a dry-run Cloudflare build and a Docker build;
   a push to `main` that passes deploys **staging**; publishing a GitHub **release** deploys the **public site** and
-  publishes the multi-arch Docker image to GHCR. The release job refuses to run while `public/site.js` still has
-  placeholders.
+  publishes the multi-arch Docker image to GHCR. Live site: `tabletop-whisperer.smokelab.workers.dev`.
 - Accessibility pass (labels, focus, contrast, screen reader on the feed) and a review of the pt-PT strings by a native speaker at your table.
 
 ### M3+: later, if people want it

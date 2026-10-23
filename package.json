@@ -8,7 +8,7 @@
     "type": "git",
     "url": "https://github.com/Nuno-lxm/tabletop-whisperer"
   },
-  "homepage": "https://tabletop-whisperer.nunolxm-jogos.workers.dev",
+  "homepage": "https://tabletop-whisperer.smokelab.workers.dev",
   "type": "module",
   "engines": {
     "node": ">=22.13"

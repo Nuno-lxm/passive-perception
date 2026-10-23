@@ -246,7 +246,7 @@ export function screenWakeLock() {
  * @param {{ prefs: () => { theme?: string }, savePrefs: (p: { theme: string }) => void }} storage
  */
 export function themeField(id, label, optionLabel, storage) {
-  const saved = storage.prefs().theme ?? 'candlelit';
+  const saved = storage.prefs().theme ?? 'auto';
   const current = saved === 'daylight' ? 'light' : saved; // renamed
   const select = /** @type {HTMLSelectElement} */ (h('select', { id },
     ...THEMES.map((theme) => h('option', { value: theme, selected: theme === current }, optionLabel(theme)))));
@@ -258,7 +258,7 @@ export function themeField(id, label, optionLabel, storage) {
 }
 
 /** The themes a device can pick; 'auto' follows the device's light/dark setting (Light or Dark). */
-export const THEMES = ['candlelit', 'light', 'dark', 'auto'];
+export const THEMES = ['auto', 'light', 'dark', 'candlelit']; // the first is the default
 const BAR_COLOURS = { candlelit: '#1c1612', light: '#1f1f23', dark: '#0f1011' };
 
 /**

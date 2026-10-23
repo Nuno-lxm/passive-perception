@@ -5,7 +5,7 @@
 When only some players pass a Perception check, the DM taps their names and they read it on their phone,
 instead of the DM getting up to whisper or passing paper notes. That's all it does: no chat, no dice, no maps.
 
-**Try it:** https://tabletop-whisperer.nunolxm-jogos.workers.dev · English and Português
+**Try it:** https://tabletop-whisperer.smokelab.workers.dev · English and Português
 
 <!-- Demo GIF: DM taps a player, their phone glows, pinch-zoom on a map, the other phone shows nothing. -->
 
@@ -67,8 +67,8 @@ pnpm start
 
 [![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/Nuno-lxm/tabletop-whisperer)
 
-No credit card needed. Running it for other people? Put your own name and contact in
-[`public/site.js`](public/site.js): the privacy page shows them.
+No credit card needed. Running it for other people? Point `repoUrl` in [`public/site.js`](public/site.js) at your fork,
+and set an `ADMIN_TOKEN` so people can send reports.
 
 ### Settings
 
