@@ -1,0 +1,56 @@
+# Put the previous version (or a chosen one) back live, from the Actions tab: Rollback → Run workflow.
+# Durable Object data is untouched: a rollback swaps code, not rooms.
+name: Rollback
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Which site
+        type: choice
+        options: [production, staging]
+        default: production
+      version:
+        description: Worker version ID to go back to (empty = the one before the current deploy). Shown in each deploy's summary.
+        required: false
+      reason:
+        description: Why (kept in Cloudflare's deployment history)
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  rollback:
+    runs-on: ubuntu-latest
+    environment:
+      name: ${{ inputs.environment }}
+      url: ${{ inputs.environment == 'production' && vars.PRODUCTION_URL || vars.STAGING_URL }}
+    concurrency:
+      group: deploy-${{ inputs.environment }}
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Roll back
+        run: |
+          ENV_FLAG=""
+          if [ "${{ inputs.environment }}" = "staging" ]; then ENV_FLAG="--env staging"; fi
+          pnpm wrangler rollback ${VERSION} $ENV_FLAG --yes --message "${REASON}"
+        env:
+          VERSION: ${{ inputs.version }}
+          REASON: ${{ inputs.reason }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      - name: Summary
+        if: always()
+        run: |
+          echo "### Rolled back ${{ inputs.environment }} to ${{ inputs.version || 'the previous version' }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "Reason: ${REASON}" >> "$GITHUB_STEP_SUMMARY"
+        env:
+          REASON: ${{ inputs.reason }}

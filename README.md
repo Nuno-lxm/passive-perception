@@ -1,5 +1,10 @@
 # Passive Perception
 
+[![CI](https://github.com/Nuno-lxm/passive-perception/actions/workflows/ci.yml/badge.svg)](https://github.com/Nuno-lxm/passive-perception/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/Nuno-lxm/passive-perception?label=release)](https://github.com/Nuno-lxm/passive-perception/releases)
+[![Docker image](https://img.shields.io/badge/docker-ghcr.io%2Fnuno--lxm%2Fpassive--perception-2496ED?logo=docker&logoColor=white)](https://github.com/Nuno-lxm/passive-perception/pkgs/container/passive-perception)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+
 **Pass secret notes to players at the table, from the DM's phone to theirs. No app, no accounts.**
 
 When only some players pass a Perception check or any other situation where only some of the people at the table should learn some information, the DM taps their names and they read it on their phone,
@@ -107,10 +112,19 @@ The one rule: `src/core/` never touches Cloudflare or Node APIs, so both hosts s
 All text is in [`public/js/locales/`](public/js/locales/). To add a language, copy `en.js`, translate the text on
 the right, add it to `LANGUAGES` in `public/js/i18n.js`, and run `pnpm test` (it checks every key is there).
 
-### Releases
+### How changes ship
 
-Pushes to `main` that pass the tests deploy to a staging copy. Publishing a GitHub release deploys the public
-site and the Docker image (`ghcr.io/nuno-lxm/passive-perception`).
+All in GitHub Actions ([`.github/workflows/`](.github/workflows/)):
+
+- **Every push and pull request:** the tests, a trial Cloudflare build and a Docker build. `main` only takes
+  changes through pull requests that pass.
+- **Merge to `main`:** deploys the staging copy, then runs the end-to-end secrecy check against it.
+- **Publish a release:** after an approval, deploys the public site (with the same check) and publishes the Docker
+  image for amd64 and arm64.
+- **Rollback:** a manual workflow puts the previous version back live in a minute.
+- **Dependabot:** weekly pull requests for the Actions, npm packages and the Docker base image.
+
+Each deploy writes a summary on its run page: URL, Worker version and smoke-test result.
 
 ## License
 
