@@ -4,7 +4,7 @@ import { errorText, formatDate, formatWhen, LANGUAGES, lang, setLanguage, t, tra
 import { api, connectRoom, forgetImages, imageUrl } from './net.js';
 import { formatRoomCode, normalizeRoomCode } from './room-code.js';
 import * as storage from './storage.js';
-import { $, closeButton, h, icon, openDialog, screenWakeLock, snackbar, themeField } from './ui.js';
+import { $, closeButton, closeDialogThen, h, icon, openDialog, screenWakeLock, snackbar, themeField } from './ui.js';
 import { openViewer } from './viewer.js';
 import { config } from '../config.js';
 
@@ -308,8 +308,7 @@ function showFeed() {
         h('span.meta', null,
           formatWhen(item.at),
           item.shared && h('span.tag', null, t('feed.shared')),
-          item.edited && h('span.tag', null, t('feed.edited')),
-          config.reports && h('button.link.report', { type: 'button', onclick: () => reportItem(roomCode, seat.token, item) }, t('report.button'))),
+          item.edited && h('span.tag', null, t('feed.edited'))),
         ack));
   }
 
@@ -383,18 +382,27 @@ function showFeed() {
 }
 
 /**
- * Report a whisper to the people who run the service (not to the DM).
- * @param {string} roomCode @param {string} token @param {Item} item
+ * Report a problem to the people who run the service (not to the DM). Picking one of your whispers attaches a copy
+ * of it (the room checks you really received it); "something else" sends a general report about this room.
+ * @param {string} roomCode @param {string} token
  */
-function reportItem(roomCode, token, item) {
+function reportProblem(roomCode, token) {
+  /** @type {Item[]} */
+  const items = [...(storage.cachedFeed(roomCode)?.items ?? [])].sort((a, b) => b.at - a.at);
+  const which = /** @type {HTMLSelectElement} */ (h('select', { id: 'report-which' },
+    ...items.map((item) => h('option', { value: item.id }, item.title || item.body.split('\n')[0].slice(0, 60) || t('dm.untitled'))),
+    h('option', { value: '' }, t('report.somethingElse'))));
   const reasons = ['illegal', 'abuse', 'child', 'other'];
   const radios = reasons.map((reason, i) => /** @type {HTMLInputElement} */ (h('input', { type: 'radio', name: 'reason', id: `reason-${reason}`, value: reason, checked: i === 0 })));
   const note = /** @type {HTMLTextAreaElement} */ (h('textarea', { id: 'report-note', rows: 3, maxlength: 2000 }));
   const send = /** @type {HTMLButtonElement} */ (h('button.primary', { type: 'button' }, t('report.send')));
   send.addEventListener('click', async () => {
-    send.disabled = true;
     const reason = radios.find((r) => r.checked)?.value ?? 'other';
-    const result = await api(`/rooms/${roomCode}/report`, { method: 'POST', auth: token, body: { cardId: item.id, reason, note: note.value } });
+    if (!which.value && !note.value.trim()) return snackbar(t('error.report_empty'));
+    send.disabled = true;
+    const result = which.value
+      ? await api(`/rooms/${roomCode}/report`, { method: 'POST', auth: token, body: { cardId: which.value, reason, note: note.value } })
+      : await api('/report', { method: 'POST', body: { roomCode, reason, note: note.value } });
     send.disabled = false;
     if (!result.ok) return snackbar(errorText(result.error));
     dialog.close();
@@ -404,6 +412,7 @@ function reportItem(roomCode, token, item) {
     closeButton(t('common.close')),
     h('h2', null, t('report.title')),
     h('p.hint', null, t('report.intro')),
+    h('label', { for: 'report-which' }, t('report.which')), which,
     h('div.choice', null, ...reasons.map((reason, i) =>
       h('label.option', { for: `reason-${reason}` }, radios[i], h('span', null, t(`report.reason.${reason}`))))),
     h('label', { for: 'report-note' }, t('report.note')), note,
@@ -451,7 +460,14 @@ function openSettings() {
       h('small', null, wake.supported ? t('settings.keepAwakeHint') : t('settings.noKeepAwake'))),
     themeField('theme', t('settings.theme'), (theme) => t(`theme.${theme}`), storage),
     h('div.field', null, h('label', { for: 'language' }, t('settings.language')), language),
-    h('p', null, h('a', { href: '/privacy' }, t('settings.privacy'))),
+    h('p.row', null,
+      h('a', { href: '/privacy' }, t('settings.privacy')),
+      config.reports && h('button.link', {
+        type: 'button',
+        onclick: (/** @type {Event} */ e) => closeDialogThen(
+          /** @type {HTMLElement} */ (e.currentTarget).closest('dialog'),
+          () => reportProblem(roomCode, storage.seats()[roomCode]?.token ?? '')),
+      }, t('report.problem'))),
     h('button.danger', {
       type: 'button',
       onclick: async () => {

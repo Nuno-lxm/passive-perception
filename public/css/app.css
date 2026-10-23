@@ -468,7 +468,6 @@ body.dm .tabs { grid-area: tabs; }
 .claim { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 10px 18px; background: var(--accent-soft); border-bottom: 1px solid var(--accent); font-family: var(--serif); font-size: 1.05rem; }
 .claim span { flex: 1; }
 .claim.frozen { background: rgba(227, 139, 111, 0.12); border-bottom-color: var(--danger); }
-.report { font-size: 0.8rem; color: var(--ink-muted); padding: 0 4px; }
 
 .tabs { display: flex; border-top: 1px solid var(--line); background: var(--bg); padding-bottom: env(safe-area-inset-bottom); }
 .tabs button {
