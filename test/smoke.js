@@ -27,6 +27,14 @@ export async function runSmoke(base) {
     return { status: response.status, data: type.includes('json') ? await response.json() : await response.arrayBuffer() };
   };
 
+  // A Worker's address can take a few seconds to answer after its first deploy: wait for the health check.
+  for (let attempt = 1; ; attempt++) {
+    const health = await api('GET', '/health').catch(() => null);
+    if (health?.status === 200 && health.data?.ok) break;
+    if (attempt === 30) assert.fail(`${base}/api/health never answered ok (last status ${health?.status})`);
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+  }
+
   const created = await api('POST', '/rooms', { body: { name: 'Smoke test', seats: ['Ana', 'Bruno'] } });
   assert.equal(created.status, 201, JSON.stringify(created.data));
   const { code, adminKey } = created.data;
