@@ -10,6 +10,7 @@
  * @property {(query: string, ...bindings: any[]) => Row[]} sql
  * @property {<T>(fn: () => T) => T} tx  Runs fn in a transaction; rolls back if it throws.
  * @property {() => number} now          Milliseconds since the epoch.
+ * @property {() => number} [size]       Bytes the database takes on disk (for the admin page's storage figure).
  */
 
 export {};

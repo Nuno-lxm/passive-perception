@@ -828,9 +828,11 @@ export class Room {
     if (!this.hooks.notify) return;
     try {
       const event = { type, code: this.meta().code };
-      if (type === 'bytes') {
-        const [{ bytes }] = this.store.sql(`SELECT coalesce(sum(bytes), 0) AS bytes FROM images`);
-        Object.assign(event, { bytes: Number(bytes) });
+      // Size goes along whenever the room is created, used or its images change, so rooms that existed before
+      // stats did show up the next time they're used. The real database size, if the host knows it.
+      if (type === 'bytes' || type === 'active' || type === 'created') {
+        const [{ bytes }] = this.store.sql(`SELECT coalesce(sum(bytes) + sum(coalesce(length(thumb), 0)), 0) AS bytes FROM images`);
+        Object.assign(event, { bytes: this.store.size?.() ?? Number(bytes) });
       }
       this.hooks.notify(event);
     } catch {
