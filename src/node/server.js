@@ -1,5 +1,5 @@
 // @ts-check
-// Self-hosted Tabletop Whisperer: serves public/ and /api/* from one Node process.
+// Self-hosted Passive Perception: serves public/ and /api/* from one Node process.
 // Data: DATA_DIR/rooms/<CODE>.sqlite, one file per room. Port: PORT (default 8080).
 import { createServer } from 'node:http';
 import { existsSync, mkdirSync, readdirSync, rmSync } from 'node:fs';
@@ -248,7 +248,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const dataDir = resolve(process.env.DATA_DIR ?? 'data');
   const expiryDays = Number(process.env.ROOM_EXPIRY_DAYS ?? 60);
   startServer({ dataDir, port, expiryDays, adminToken: process.env.ADMIN_TOKEN || undefined });
-  console.log(`Tabletop Whisperer on http://localhost:${port}  (data: ${dataDir})`);
+  console.log(`Passive Perception on http://localhost:${port}  (data: ${dataDir})`);
   if (process.env.PUBLIC_URL) console.log(`  players join at: ${process.env.PUBLIC_URL}`);
   else if (existsSync('/.dockerenv')) {
     console.log('  In Docker: set PUBLIC_URL (e.g. http://192.168.1.23:8080) so the join QR code shows this machine\'s address.');

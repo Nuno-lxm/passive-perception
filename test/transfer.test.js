@@ -20,10 +20,10 @@ async function campaign() {
 test('export: one JSON file with seats, cards, images, notes and reveals, and no secrets', async () => {
   const { r, key, tokens, exported } = await campaign();
   assert.equal(exported.status, 200);
-  assert.match(exported.headers.get('content-disposition') ?? '', /attachment; filename="campaign-\d{4}-\d{2}-\d{2}\.whisperer\.json"/);
+  assert.match(exported.headers.get('content-disposition') ?? '', /attachment; filename="campaign-\d{4}-\d{2}-\d{2}\.passive-perception\.json"/);
   const text = new TextDecoder().decode(exported.data);
   const file = JSON.parse(text);
-  assert.equal(file.format, 'tabletop-whisperer');
+  assert.equal(file.format, 'passive-perception');
   assert.deepEqual(file.seats.map((s) => s.name), ['Ana', 'Bruno']);
   assert.deepEqual(file.cards.map((c) => c.title), ['Torn map', 'Cold draft']);
   assert.equal(file.cards[0].note, 'after the fight');

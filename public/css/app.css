@@ -1,4 +1,4 @@
-/* Tabletop Whisperer themes. Everything visual is a variable on :root, so a theme is a set of values.
+/* Passive Perception themes. Everything visual is a variable on :root, so a theme is a set of values.
    Candlelit (default): warm and dark for a dim table; umber wood, parchment notes, one candle-amber accent,
    Alegreya for anything read and Alegreya Sans for controls (served from here, not a CDN).
    Light and Dark: plain; see :root[data-theme="light"] / "dark". js/theme.js picks the theme before the page paints. */

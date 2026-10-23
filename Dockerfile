@@ -1,4 +1,4 @@
-# Self-hosted Tabletop Whisperer: docker run -p 8080:8080 -v whisperer-data:/data <image>
+# Self-hosted Passive Perception: docker run -p 8080:8080 -v perception-data:/data <image>
 FROM node:24-alpine
 WORKDIR /app
 ENV NODE_ENV=production PORT=8080 DATA_DIR=/data

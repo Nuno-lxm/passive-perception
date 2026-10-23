@@ -1,11 +1,11 @@
-# Tabletop Whisperer
+# Passive Perception
 
 **Pass secret notes to players at the table, from the DM's phone to theirs. No app, no accounts.**
 
 When only some players pass a Perception check, the DM taps their names and they read it on their phone,
 instead of the DM getting up to whisper or passing paper notes. That's all it does: no chat, no dice, no maps.
 
-**Try it:** https://tabletop-whisperer.smokelab.workers.dev · English and Português
+**Try it:** https://passive-perception.smokelab.workers.dev · English and Português
 
 <!-- Demo GIF: DM taps a player, their phone glows, pinch-zoom on a map, the other phone shows nothing. -->
 
@@ -38,9 +38,9 @@ Three ways, all free:
 ### 1. Docker (a laptop at the table, or a home server)
 
 ```bash
-docker run -d --name whisperer -p 8080:8080 -v whisperer-data:/data \
+docker run -d --name passive-perception -p 8080:8080 -v perception-data:/data \
   -e PUBLIC_URL=http://192.168.1.23:8080 --restart unless-stopped \
-  ghcr.io/nuno-lxm/tabletop-whisperer
+  ghcr.io/nuno-lxm/passive-perception
 ```
 
 Open `http://localhost:8080`. Players' phones must be on the same Wi-Fi; the join QR code uses `PUBLIC_URL`
@@ -48,7 +48,7 @@ Open `http://localhost:8080`. Players' phones must be on the same Wi-Fi; the joi
 
 Notes for a laptop at the table:
 - Plain `http://` on a home network can't keep players' screens on ("Keep screen on" needs HTTPS). For that, put it
-  behind a reverse proxy with a certificate, e.g. Caddy: `whisperer.example.org { reverse_proxy localhost:8080 }`.
+  behind a reverse proxy with a certificate, e.g. Caddy: `perception.example.org { reverse_proxy localhost:8080 }`.
 - Guest Wi-Fi and game-store networks often block phones from reaching each other: use your laptop's hotspot.
 - Don't let the laptop sleep during the session.
 
@@ -65,7 +65,7 @@ pnpm start
 
 ### 3. Your own copy on Cloudflare's free plan
 
-[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/Nuno-lxm/tabletop-whisperer)
+[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/Nuno-lxm/passive-perception)
 
 No credit card needed. Running it for other people? Point `repoUrl` in [`public/site.js`](public/site.js) at your fork,
 and set an `ADMIN_TOKEN` so people can send reports.
@@ -113,7 +113,7 @@ Portuguese from Brazil especially welcome.
 ### Releases
 
 Pushes to `main` that pass the tests deploy to a staging copy. Publishing a GitHub release deploys the public
-site and the Docker image (`ghcr.io/nuno-lxm/tabletop-whisperer`).
+site and the Docker image (`ghcr.io/nuno-lxm/passive-perception`).
 
 ## License
 

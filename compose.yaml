@@ -1,5 +1,5 @@
 services:
-  whisperer:
+  passive-perception:
     build: .
     ports:
       - "8080:8080"
@@ -9,7 +9,7 @@ services:
       # PUBLIC_URL: http://192.168.1.23:8080
       PUBLIC_URL: ${PUBLIC_URL:-}
     volumes:
-      - whisperer-data:/data
+      - perception-data:/data
     restart: unless-stopped
 volumes:
-  whisperer-data:
+  perception-data:

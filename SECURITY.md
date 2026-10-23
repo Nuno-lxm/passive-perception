@@ -1,6 +1,6 @@
 # Security
 
-Tabletop Whisperer's main promise is that players never see what wasn't revealed to them. If you find a way
+Passive Perception's main promise is that players never see what wasn't revealed to them. If you find a way
 around that, or any other security problem, please don't open a public issue.
 
 Report it privately instead: on GitHub, **Security → Report a vulnerability** in this repository.

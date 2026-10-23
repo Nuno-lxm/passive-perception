@@ -1,14 +1,14 @@
 {
-  "name": "tabletop-whisperer",
+  "name": "passive-perception",
   "version": "0.0.0",
   "private": true,
   "description": "Pass secret notes to players at the table, from the DM's phone to theirs. No app, no accounts.",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Nuno-lxm/tabletop-whisperer"
+    "url": "https://github.com/Nuno-lxm/passive-perception"
   },
-  "homepage": "https://tabletop-whisperer.smokelab.workers.dev",
+  "homepage": "https://passive-perception.smokelab.workers.dev",
   "type": "module",
   "engines": {
     "node": ">=22.13"
