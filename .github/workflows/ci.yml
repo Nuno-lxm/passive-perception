@@ -46,7 +46,9 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: [test, docker]
     runs-on: ubuntu-latest
-    environment: staging
+    environment:
+      name: staging
+      url: ${{ vars.STAGING_URL }}
     concurrency:
       group: deploy-staging
       cancel-in-progress: false
@@ -59,10 +61,27 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - name: Deploy to staging
-        run: pnpm wrangler deploy --env staging
+        id: deploy
+        run: |
+          pnpm wrangler deploy --env staging | tee deploy.log
+          echo "version=$(grep -oP 'Current Version ID: \K\S+' deploy.log)" >> "$GITHUB_OUTPUT"
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
       - name: Smoke test staging
+        id: smoke
         run: node test/smoke.js "${{ vars.STAGING_URL }}"
         if: vars.STAGING_URL != ''
+      - name: Summary
+        if: always()
+        run: |
+          {
+            echo "### Staging deploy"
+            echo "| | |"
+            echo "|---|---|"
+            echo "| Result | ${{ steps.deploy.outcome == 'success' && '✅ deployed' || '❌ failed' }} |"
+            echo "| URL | ${{ vars.STAGING_URL || '(set the STAGING_URL variable)' }} |"
+            echo "| Commit | \`${GITHUB_SHA::7}\` |"
+            echo "| Worker version | \`${{ steps.deploy.outputs.version || 'n/a' }}\` |"
+            echo "| Smoke test (secrets stay secret) | ${{ steps.smoke.outcome == 'success' && '✅ passed' || steps.smoke.outcome == 'skipped' && '⏭ skipped' || '❌ failed' }} |"
+          } >> "$GITHUB_STEP_SUMMARY"

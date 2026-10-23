@@ -24,7 +24,9 @@ jobs:
   deploy-production:
     needs: test
     runs-on: ubuntu-latest
-    environment: production
+    environment:
+      name: production
+      url: ${{ vars.PRODUCTION_URL }}
     concurrency:
       group: deploy-production
       cancel-in-progress: false
@@ -37,13 +39,31 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - name: Deploy the public site
-        run: pnpm wrangler deploy
+        id: deploy
+        run: |
+          pnpm wrangler deploy --message "Release ${{ github.event.release.tag_name }}" | tee deploy.log
+          echo "version=$(grep -oP 'Current Version ID: \K\S+' deploy.log)" >> "$GITHUB_OUTPUT"
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
       - name: Smoke test the public site
+        id: smoke
         run: node test/smoke.js "${{ vars.PRODUCTION_URL }}"
         if: vars.PRODUCTION_URL != ''
+      - name: Summary
+        if: always()
+        run: |
+          {
+            echo "### Live deploy: ${{ github.event.release.tag_name }}"
+            echo "| | |"
+            echo "|---|---|"
+            echo "| Result | ${{ steps.deploy.outcome == 'success' && '✅ live' || '❌ failed' }} |"
+            echo "| URL | ${{ vars.PRODUCTION_URL || '(set the PRODUCTION_URL variable)' }} |"
+            echo "| Worker version | \`${{ steps.deploy.outputs.version || 'n/a' }}\` |"
+            echo "| Smoke test (secrets stay secret) | ${{ steps.smoke.outcome == 'success' && '✅ passed' || steps.smoke.outcome == 'skipped' && '⏭ skipped' || '❌ failed' }} |"
+            echo ""
+            echo "Something wrong? Actions → **Rollback** → Run workflow → production."
+          } >> "$GITHUB_STEP_SUMMARY"
 
   docker-image:
     needs: test
@@ -71,6 +91,7 @@ jobs:
             type=semver,pattern={{major}}.{{minor}}
             type=raw,value=latest
       - name: Build and publish (amd64 + arm64, e.g. Raspberry Pi)
+        id: push
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -80,3 +101,12 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+      - name: Summary
+        run: |
+          {
+            echo "### Docker image"
+            echo '```'
+            echo "${{ steps.meta.outputs.tags }}"
+            echo '```'
+            echo "Digest: \`${{ steps.push.outputs.digest }}\`"
+          } >> "$GITHUB_STEP_SUMMARY"

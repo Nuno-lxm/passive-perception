@@ -1,0 +1,23 @@
+# Weekly pull requests to keep dependencies current. Each one runs the full CI before it can be merged.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      actions:
+        patterns: ["*"]
+
+  - package-ecosystem: npm   # pnpm-lock.yaml (wrangler, ws)
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      dependencies:
+        patterns: ["*"]
+
+  - package-ecosystem: docker   # the node base image of the self-hosting image
+    directory: /
+    schedule:
+      interval: weekly
