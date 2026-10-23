@@ -21,7 +21,7 @@ test('Node host serves the app and the API', async (t) => {
   const page = await fetch(`${base}/`);
   assert.equal(page.status, 200);
   assert.match(page.headers.get('content-security-policy') ?? '', /default-src 'self'/);
-  assert.match(await page.text(), /Tabletop Whisperer/);
+  assert.match(await page.text(), /Passive Perception/);
 
   assert.equal((await fetch(`${base}/_headers`)).status, 404, '_ files are never served');
   assert.equal((await fetch(`${base}/../package.json`)).status, 404);

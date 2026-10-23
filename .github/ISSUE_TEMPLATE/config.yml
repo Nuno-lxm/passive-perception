@@ -1,5 +1,5 @@
 blank_issues_enabled: true
 contact_links:
   - name: Report illegal or abusive content on the public site
-    url: https://tabletop-whisperer.smokelab.workers.dev/report
+    url: https://passive-perception.smokelab.workers.dev/report
     about: Please don't post it publicly here; use the report form.

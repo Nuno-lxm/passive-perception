@@ -1,6 +1,6 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "tabletop-whisperer",
+  "name": "passive-perception",
   "main": "src/cloudflare/worker.js",
   "compatibility_date": "2026-10-01",
   // Files in public/ are served for free without running the Worker; /api/* has no file, so it reaches the Worker.
@@ -25,7 +25,7 @@
   "env": {
     // Bindings aren't inherited by environments, so they're repeated here.
     "staging": {
-      "name": "tabletop-whisperer-staging",
+      "name": "passive-perception-staging",
       "durable_objects": { "bindings": [{ "name": "ROOM", "class_name": "RoomDO" }, { "name": "ADMIN", "class_name": "AdminDO" }] },
       "vars": { "DO_JURISDICTION": "eu", "ROOM_EXPIRY_DAYS": "60" },
       "ratelimits": [

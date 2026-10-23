@@ -921,7 +921,7 @@ export class Room {
     return new Response(exportStream(this.store, meta), {
       headers: {
         'content-type': 'application/json; charset=utf-8',
-        'content-disposition': `attachment; filename="${slug}-${day}.whisperer.json"`,
+        'content-disposition': `attachment; filename="${slug}-${day}.passive-perception.json"`,
         'cache-control': 'no-store',
       },
     });

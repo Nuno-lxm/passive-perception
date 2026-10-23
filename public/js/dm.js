@@ -220,7 +220,7 @@ function buildShell() {
   listeners.add(() => {
     title.textContent = state.room?.name ?? '';
     code.textContent = formatRoomCode(state.code);
-    document.title = `${state.room?.name ?? ''} · Whisperer`;
+    document.title = `${state.room?.name ?? ''} · Passive Perception`;
     const frozenBanner = /** @type {any} */ (state.room)?.frozen ? [h('div.claim.frozen', { role: 'status' }, h('span', null, t('error.room_frozen')))] : [];
     claims.replaceChildren(...frozenBanner, ...state.claims.map((claim) => {
       const seat = state.seats.find((s) => s.id === claim.seatId);
@@ -983,7 +983,7 @@ async function exportCampaign(button) {
     const response = await fetch(`/api/rooms/${state.code}/export`, { headers: { authorization: `Bearer ${state.key}` } }).catch(() => null);
     if (!response?.ok) return snackbar(errorText(response ? 'generic' : 'network'));
     const blob = await response.blob();
-    const name = /filename="([^"]+)"/.exec(response.headers.get('content-disposition') ?? '')?.[1] ?? 'campaign.whisperer.json';
+    const name = /filename="([^"]+)"/.exec(response.headers.get('content-disposition') ?? '')?.[1] ?? 'campaign.passive-perception.json';
     const url = URL.createObjectURL(blob);
     const link = h('a', { href: url, download: name, hidden: true });
     document.body.append(link);

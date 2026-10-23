@@ -83,7 +83,7 @@ $('#import-file').addEventListener('change', async (event) => {
   } catch {
     file = null;
   }
-  if (!file || file.format !== 'tabletop-whisperer' || !Array.isArray(file.cards) || !Array.isArray(file.seats)) {
+  if (!file || !['passive-perception', 'tabletop-whisperer'].includes(file.format) || !Array.isArray(file.cards) || !Array.isArray(file.seats)) {
     return summary.replaceChildren(h('p.error', null, t('landing.badFile')));
   }
   if (file.version > 1) return summary.replaceChildren(h('p.error', null, t('landing.newerFile')));

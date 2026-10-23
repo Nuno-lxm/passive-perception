@@ -8,7 +8,9 @@
 import { checkImage, IMAGE_LIMITS } from './images.js';
 import { InputError, LIMITS, parseCardFields } from './validate.js';
 
-export const FORMAT = 'tabletop-whisperer';
+export const FORMAT = 'passive-perception';
+/** Files exported before the app was renamed (Tabletop Whisperer) import the same way. */
+export const OLD_FORMATS = ['tabletop-whisperer'];
 export const VERSION = 1;
 export const IMPORT_WINDOW = 60 * 60 * 1000;
 

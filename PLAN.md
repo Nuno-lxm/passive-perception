@@ -1,11 +1,13 @@
-# Tabletop Whisperer — plan
+# Passive Perception — plan
+
+*Working names: Whisperer, then Tabletop Whisperer; renamed to Passive Perception on 2026-10-23.*
 
 **Pass secret notes to players at the table, from the DM's phone to theirs. No app, no accounts.**
 
 When only some players pass a Perception or Insight check, the DM taps their names and they read it on their phone.
 It replaces getting up to whisper or passing paper notes, and nothing else: no chat, dice, maps or character sheets.
 
-- **Name:** *Tabletop Whisperer* in full (landing page, README, search). *Whisperer* is the short form, used for the home-screen icon and the app header. Repo: `tabletop-whisperer`.
+- **Name:** *Passive Perception* (no short form). Repo: `passive-perception`. Live: `passive-perception.smokelab.workers.dev`.
 - **Two ways to run it, from one codebase:**
   1. **Hosted:** free, no setup, on Cloudflare's free tier, for anyone.
   2. **Self-hosted:** Docker or plain Node on the DM's laptop (players join over Wi-Fi) or on a home server.
