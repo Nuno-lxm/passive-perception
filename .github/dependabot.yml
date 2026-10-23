@@ -21,3 +21,7 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    ignore:
+      # Stay on the long-term-support Node line; moving to the next one (26) is a deliberate change.
+      - dependency-name: node
+        update-types: ["version-update:semver-major"]
