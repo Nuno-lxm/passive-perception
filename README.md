@@ -57,6 +57,10 @@ Notes for a laptop at the table:
 
 Or with compose: `PUBLIC_URL=http://192.168.1.23:8080 docker compose up -d`.
 
+**Using a host folder instead of a volume** (Zima/CasaOS, Unraid, Synology and other home-server dashboards do this):
+the container runs as user `1000`, not root, so it needs to own that folder. Otherwise it stops with
+"Can't write to the data folder". Fix it once on the host: `sudo chown -R 1000:1000 /path/to/the/folder`.
+
 ### 2. Node, without Docker
 
 Node 22.13 or newer (Node 24 recommended) and [pnpm](https://pnpm.io/installation) (`npm install -g pnpm`):

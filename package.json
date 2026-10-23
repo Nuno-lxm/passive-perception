@@ -1,6 +1,6 @@
 {
   "name": "passive-perception",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "description": "Pass secret notes to players at the table, from the DM's phone to theirs. No app, no accounts.",
   "license": "MIT",

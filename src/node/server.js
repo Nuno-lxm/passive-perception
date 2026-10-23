@@ -2,7 +2,7 @@
 // Self-hosted Passive Perception: serves public/ and /api/* from one Node process.
 // Data: DATA_DIR/rooms/<CODE>.sqlite, one file per room. Port: PORT (default 8080).
 import { createServer } from 'node:http';
-import { existsSync, mkdirSync, readdirSync, rmSync } from 'node:fs';
+import { accessSync, constants, existsSync, mkdirSync, readdirSync, rmSync } from 'node:fs';
 import { networkInterfaces } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -243,10 +243,32 @@ function configScript(/** @type {number} */ port, /** @type {boolean} */ reports
   });
 }
 
+/**
+ * Stops with a clear message when the data folder isn't writable. The usual cause: Docker with a host folder
+ * (NAS and home-server apps) that root owns, while the image runs as the unprivileged `node` user.
+ * @param {string} dataDir
+ */
+function checkDataDir(dataDir) {
+  try {
+    mkdirSync(join(dataDir, 'rooms'), { recursive: true });
+    for (const dir of [dataDir, join(dataDir, 'rooms')]) accessSync(dir, constants.W_OK);
+  } catch (error) {
+    const code = /** @type {NodeJS.ErrnoException} */ (error).code;
+    if (code !== 'EACCES' && code !== 'EPERM') throw error;
+    const user = process.getuid ? `${process.getuid()}:${process.getgid?.()}` : 'this user';
+    console.error(`Can't write to the data folder (${dataDir}): permission denied.
+The server runs as user ${user}, not as root. Give that user the folder. With Docker and a host folder:
+  sudo chown -R ${user} /path/to/the/folder/on/the/host
+(A named volume, as in the README's docker run command, doesn't need this.)`);
+    process.exit(1);
+  }
+}
+
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const port = Number(process.env.PORT ?? 8080);
   const dataDir = resolve(process.env.DATA_DIR ?? 'data');
   const expiryDays = Number(process.env.ROOM_EXPIRY_DAYS ?? 60);
+  checkDataDir(dataDir);
   startServer({ dataDir, port, expiryDays, adminToken: process.env.ADMIN_TOKEN || undefined });
   console.log(`Passive Perception on http://localhost:${port}  (data: ${dataDir})`);
   if (process.env.PUBLIC_URL) console.log(`  players join at: ${process.env.PUBLIC_URL}`);
