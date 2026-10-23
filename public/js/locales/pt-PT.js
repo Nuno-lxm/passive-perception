@@ -282,6 +282,7 @@ export default {
   'error.server_error': 'O servidor teve um problema. Tenta outra vez.',
   'error.rate_limited': 'Demasiadas tentativas. Espera um minuto e tenta outra vez.',
   'error.unauthorized': 'Não autorizado. O teu link ou lugar pode ter mudado.',
+  'error.locked': 'Demasiadas tentativas erradas. Bloqueado até uma hora.',
   'error.forbidden': 'Não autorizado.',
   'error.bad_json': 'Algo correu mal. Tenta outra vez.',
   'error.room_not_found': 'Não há nenhuma sala com esse código.',

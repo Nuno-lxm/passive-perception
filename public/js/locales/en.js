@@ -283,6 +283,7 @@ export default {
   'error.rate_limited': 'Too many tries. Wait a minute and try again.',
   'error.unauthorized': 'Not allowed. Your link or seat may have changed.',
   'error.forbidden': 'Not allowed.',
+  'error.locked': 'Too many wrong tries. Locked for up to an hour.',
   'error.bad_json': 'Something went wrong. Try again.',
   'error.room_not_found': 'No room with that code.',
   'error.room_name_required': 'Give the campaign a name.',

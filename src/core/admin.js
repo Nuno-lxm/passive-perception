@@ -24,7 +24,13 @@ const ADMIN_MIGRATIONS = [
        joins INTEGER NOT NULL DEFAULT 0, rooms_deleted INTEGER NOT NULL DEFAULT 0)`,
     `CREATE TABLE rooms (code TEXT PRIMARY KEY, created_at INTEGER, last_active_at INTEGER, bytes INTEGER NOT NULL DEFAULT 0)`,
   ],
+  // 3: when wrong admin tokens were tried (only the time).
+  [`CREATE TABLE login_failures (at INTEGER NOT NULL)`],
 ];
+// Wrong admin tokens, counted for the whole service (no IP addresses kept): this many in an hour lock the admin API,
+// for everyone, until the oldest is an hour old. At most 240 guesses a day, so even a passphrase can't be guessed.
+const LOGIN_FAILURES = 10;
+const LOGIN_WINDOW = 60 * 60 * 1000;
 const STORAGE_LIMIT = 5_000_000_000; // the Durable Objects free tier
 
 /** @param {unknown} value @param {number} max */
@@ -42,6 +48,7 @@ export class Admin {
     const { pathname } = new URL(request.url);
     this.store.sql(`DELETE FROM reports WHERE status = 'closed' AND closed_at < ?`, this.store.now() - KEEP_CLOSED);
     let m;
+    if (request.method === 'POST' && pathname === '/login') return this.login(await readJson(request));
     if (request.method === 'POST' && pathname === '/report') return this.addReport(await readJson(request));
     if (request.method === 'POST' && pathname === '/event') return this.event(await readJson(request));
     if (request.method === 'GET' && pathname === '/stats') return this.stats();
@@ -52,6 +59,22 @@ export class Admin {
       return json({ ok: true });
     }
     return fail('not_found', 404);
+  }
+
+  /**
+   * The admin API's gate. The router checked the token; this says whether to let it in.
+   * @param {any} body  { ok: boolean }
+   */
+  login(body) {
+    const now = this.store.now();
+    this.store.sql(`DELETE FROM login_failures WHERE at <= ?`, now - LOGIN_WINDOW);
+    const [{ n }] = this.store.sql(`SELECT count(*) AS n FROM login_failures`);
+    if (n >= LOGIN_FAILURES) return fail('locked', 429);
+    if (body?.ok !== true) {
+      this.store.sql(`INSERT INTO login_failures (at) VALUES (?)`, now);
+      return fail('unauthorized', 401);
+    }
+    return json({ ok: true });
   }
 
   /** @param {any} body  { kind: 'player' | 'public', roomCode, cardId, reason, note, contact, snapshot } */

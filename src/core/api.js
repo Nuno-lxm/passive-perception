@@ -106,11 +106,12 @@ export async function handleApi(request, host) {
 async function adminApi(request, url, host) {
   if (!host.admin || !host.adminToken) return fail('not_found', 404);
   const given = (request.headers.get('authorization') ?? '').replace(/^Bearer /, '');
+  if (!given) return fail('unauthorized', 401);
   // Compare hashes, so the time taken says nothing about how much of a guess was right.
-  if (!given || (await sha256(given)) !== (await sha256(host.adminToken))) {
-    if (host.allow) await host.allow(request, 'report'); // count failures against the same small budget
-    return fail('unauthorized', 401);
-  }
+  const ok = (await sha256(given)) === (await sha256(host.adminToken));
+  // The admin store counts wrong tokens and, after too many, refuses even the right one for a while.
+  const gate = await host.admin().fetch(new Request('https://admin/login', { method: 'POST', body: JSON.stringify({ ok }) }));
+  if (!gate.ok) return gate;
   const path = url.pathname.slice('/api/admin'.length);
   const method = request.method;
   if (path === '/stats' && method === 'GET') return host.admin().fetch(new Request('https://admin/stats'));

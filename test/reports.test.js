@@ -154,3 +154,31 @@ test('stats: storage counts the images (and thumbnails) a room holds', async () 
   const { data } = await json('GET', '/api/admin/stats', undefined, TOKEN);
   assert.equal(data.storage.bytes, 5000);
 });
+
+test('too many wrong admin tokens lock the admin API, even for the right token, until they are an hour old', async () => {
+  const host = memoryHost({ adminToken: TOKEN });
+  const status = async (token) => (await handleApi(api('/api/admin/stats', { headers: token ? { authorization: `Bearer ${token}` } : {} }), host)).status;
+  for (let i = 0; i < 9; i++) assert.equal(await status(`guess-${i}`), 401);
+  assert.equal(await status(), 401, 'no token at all is not a guess');
+  assert.equal(await status(TOKEN), 200, 'nine wrong guesses: still open');
+  assert.equal(await status('guess-9'), 401);
+  assert.equal(await status(TOKEN), 429, 'ten wrong guesses: locked, so a right guess now tells nothing');
+  assert.equal(await status('guess-10'), 429);
+});
+
+test('the admin lock opens again once the wrong tries are an hour old', async () => {
+  const { Admin } = await import('../src/core/admin.js');
+  const { openStore } = await import('../src/node/adapter.js');
+  const store = openStore(':memory:');
+  let now = 1_800_000_000_000;
+  store.now = () => now;
+  const admin = new Admin(store);
+  const login = async (ok) => (await admin.handle(new Request('https://admin/login', { method: 'POST', body: JSON.stringify({ ok }) }))).status;
+  for (let i = 0; i < 10; i++) { assert.equal(await login(false), 401); now += 60_000; }
+  assert.equal(await login(true), 429);
+  now += 50 * 60_000; // the first wrong try is now an hour old
+  assert.equal(await login(true), 200);
+  assert.equal(await login(false), 401);
+  assert.equal(await login(true), 429, 'back at ten in the last hour');
+  assert.deepEqual(store.sql(`SELECT * FROM login_failures`).map((row) => Object.keys(row)), Array(10).fill(['at']), 'only times are kept');
+});

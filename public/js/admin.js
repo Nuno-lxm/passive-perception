@@ -17,6 +17,9 @@ async function adminFetch(path, init = {}) {
   if (response?.status === 401) {
     sessionStorage.removeItem(KEY);
     showLogin('That token is not right.');
+  } else if (response?.status === 429) {
+    sessionStorage.removeItem(KEY);
+    showLogin('Too many wrong tokens. The admin page is locked for up to an hour.');
   }
   return response;
 }

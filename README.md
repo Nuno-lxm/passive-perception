@@ -85,7 +85,7 @@ and set an `ADMIN_TOKEN` so people can send reports.
 | Node / Docker | `DATA_DIR` | `./data` (`/data` in Docker) | One SQLite file per room, plus `admin.sqlite` |
 | Node / Docker | `PUBLIC_URL` | your network addresses | The address players use (shown in the join QR) |
 | both | `ROOM_EXPIRY_DAYS` | `60` | Delete rooms unused this long; `0` keeps them forever |
-| both | `ADMIN_TOKEN` | not set | Turns on content reports and the `/admin` page (stats, reports). On Cloudflare, set it with `wrangler secret put ADMIN_TOKEN` |
+| both | `ADMIN_TOKEN` | not set | Turns on content reports and the `/admin` page (stats, reports). Use a long random token or a passphrase of 5+ random words; 10 wrong tries in an hour lock `/admin` for up to an hour. On Cloudflare, set it with `wrangler secret put ADMIN_TOKEN` |
 
 Backups on Node/Docker: copy the data folder. From the app: Room → Export campaign (works between all versions).
 

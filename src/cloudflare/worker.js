@@ -28,7 +28,6 @@ export default {
     } catch (error) {
       console.error(error);
       // Over a free-tier limit, Durable Object calls throw; the client then shows a calm "busy today" message.
-      // The exact error text gets checked against real limit errors in M2.
       if (/exceeded|limit/i.test(String(error))) return fail('over_capacity', 503);
       return fail('server_error', 500);
     }
@@ -44,7 +43,7 @@ function cloudflareHost(env) {
     adminToken: env.ADMIN_TOKEN,
     // A Durable Object exists as soon as it's addressed; Room writes nothing until create().
     room: (code) => rooms.get(rooms.idFromName(code)),
-    // Approximate, per Cloudflare location. Strict daily limits come with the AdminDO (M2).
+    // Approximate: Cloudflare counts per location.
     async allow(request, bucket) {
       const limiter = bucket === 'create' ? env.CREATE_LIMIT : bucket === 'report' ? env.REPORT_LIMIT : env.JOIN_LIMIT;
       if (!limiter) return true;
