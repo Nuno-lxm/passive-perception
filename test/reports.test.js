@@ -145,3 +145,12 @@ test('bug reports: from players or the public form, with a description', async (
   assert.equal(data.reports[0].reason, 'bug');
   assert.equal(data.reports[0].roomCode, room.code);
 });
+
+test('stats: storage counts the images (and thumbnails) a room holds', async () => {
+  const { send, json, room, card } = await setup();
+  const png = (await import('./helpers.js')).fakePng(10, 10, 5000);
+  await send(`/api/rooms/${room.code}/cards/${card.id}/images`, { method: 'POST', headers: { authorization: `Bearer ${room.adminKey}` }, body: png });
+  await new Promise((resolve) => setTimeout(resolve, 20));
+  const { data } = await json('GET', '/api/admin/stats', undefined, TOKEN);
+  assert.equal(data.storage.bytes, 5000);
+});

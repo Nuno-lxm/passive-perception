@@ -17,6 +17,7 @@ export class RoomDO extends DurableObject {
       sql: (query, ...bindings) => storage.sql.exec(query, ...bindings.map(toSqlValue)).toArray().map(fromSqlRow),
       tx: (fn) => storage.transactionSync(fn),
       now: () => Date.now(),
+      size: () => storage.sql.databaseSize,
     };
     /** @type {import('../core/sockets.js').Sockets} */
     const sockets = {

@@ -84,12 +84,16 @@ export class Admin {
       this.store.sql(`UPDATE days SET ${column} = ${column} + 1 WHERE day = ?`, day);
     };
     const room = () => this.store.sql(`INSERT OR IGNORE INTO rooms (code, created_at, last_active_at) VALUES (?, ?, ?)`, code, now, now);
+    if (code && typeof body?.bytes === 'number' && body.type !== 'deleted') {
+      room();
+      this.store.sql(`UPDATE rooms SET bytes = ? WHERE code = ?`, Math.max(0, body.bytes), code);
+    }
     switch (body?.type) {
       case 'created': room(); bump('rooms_created'); break;
       case 'active': room(); this.store.sql(`UPDATE rooms SET last_active_at = ? WHERE code = ?`, now, code); break;
       case 'reveal': bump('reveals'); break;
       case 'join': bump('joins'); break;
-      case 'bytes': room(); this.store.sql(`UPDATE rooms SET bytes = ? WHERE code = ?`, Math.max(0, Number(body.bytes) || 0), code); break;
+      case 'bytes': break; // stored above
       case 'deleted': this.store.sql(`DELETE FROM rooms WHERE code = ?`, code); bump('rooms_deleted'); break;
       default: return fail('bad_event', 400);
     }
