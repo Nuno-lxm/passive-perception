@@ -17,6 +17,26 @@ translatePage();
 /** @type {HTMLAnchorElement} */ ($('#selfhost-link')).href = `${site.repoUrl}#run-your-own`;
 if (config.mode === 'local') for (const el of document.querySelectorAll('.marketing')) /** @type {HTMLElement} */ (el).hidden = true;
 $('#report-link').hidden = !config.reports;
+showYourRooms();
+
+/**
+ * The rooms this device knows: ones you run (DM link saved here) and ones you joined as a player.
+ * Shown first for returning visitors; a first visit sees the normal page.
+ */
+function showYourRooms() {
+  const run = Object.entries(storage.dmRooms());
+  const joined = Object.entries(storage.seats()).filter(([code]) => !run.some(([dmCode]) => dmCode === code));
+  if (!run.length && !joined.length) return;
+  const row = (/** @type {string} */ href, /** @type {string} */ name, /** @type {string} */ code, /** @type {string} */ role) =>
+    h('a.room-link', { href },
+      h('span.room-name', null, name || formatRoomCode(code)),
+      h('span.room-meta', null, `${formatRoomCode(code)} · ${role}`));
+  $('#your-rooms-list').replaceChildren(
+    ...run.map(([code, room]) => row(`/dm#r=${code}&k=${room.key}`, room.name ?? '', code, t('landing.asDm'))),
+    ...joined.map(([code, seat]) => row(`/play?r=${code}`, seat.roomName ?? '', code, t('landing.asPlayer', { name: seat.seatName }))),
+  );
+  $('#your-rooms').hidden = false;
+}
 
 const language = /** @type {HTMLSelectElement} */ ($('#language'));
 language.replaceChildren(...LANGUAGES.map((l) => h('option', { value: l.code, selected: l.code === lang }, l.name)));

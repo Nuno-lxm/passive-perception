@@ -16,6 +16,9 @@ export default {
   'landing.seatsHint': 'Tip: use character names, not real names.',
   'landing.createButton': 'Create room',
 
+  'landing.yourRooms': 'Your rooms',
+  'landing.asDm': 'you’re the DM',
+  'landing.asPlayer': 'you play {name}',
   'landing.howTitle': 'How it works',
   'landing.step1': 'Prepare cards.',
   'landing.step1Text': 'Clues, handouts, maps. Or type a quick whisper at the table.',

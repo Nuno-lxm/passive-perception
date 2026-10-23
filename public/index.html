@@ -15,6 +15,12 @@
     <h1>Tabletop Whisperer</h1>
     <p class="tagline" data-i18n="landing.tagline">Pass secret notes to players at the table, from the DM's phone to theirs. No app, no accounts.</p>
 
+    <!-- Rooms this device knows (filled in by landing.js; hidden on a first visit). -->
+    <section id="your-rooms" class="stack" aria-labelledby="your-rooms-title" hidden>
+      <h2 id="your-rooms-title" data-i18n="landing.yourRooms">Your rooms</h2>
+      <div id="your-rooms-list" class="room-list"></div>
+    </section>
+
     <!-- Demo GIF goes here at launch: <figure class="demo"><img src="/img/demo.gif" alt="…"></figure> -->
 
     <section class="how marketing" aria-labelledby="how-title">
@@ -53,7 +59,6 @@
         <input type="file" id="import-file" accept=".json,application/json" data-i18n-aria-label="landing.fromFile" aria-label="Export file">
         <div id="import-summary"></div>
       </details>
-      <p><a href="/dm" data-i18n="dm.myRooms">My rooms</a></p>
     </section>
 
     <section class="why marketing" aria-labelledby="why-title">
