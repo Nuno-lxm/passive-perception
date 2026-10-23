@@ -69,6 +69,21 @@ export function openDialog(content, { className = '', onClose } = {}) {
   return dialog;
 }
 
+/**
+ * Closes a dialog, then runs `next` (e.g. to open another dialog). Closing steps back in history, which arrives a
+ * moment later; opening the next dialog before that would get it closed by the same step.
+ * @param {HTMLDialogElement | null | undefined} dialog @param {() => void} next
+ */
+export function closeDialogThen(dialog, next) {
+  if (dialog?.open && history.state?.dialog) {
+    addEventListener('popstate', () => next(), { once: true });
+    dialog.close();
+  } else {
+    dialog?.close();
+    next();
+  }
+}
+
 /** The close (×) button used at the top of dialogs. @param {string} label */
 export const closeButton = (label) =>
   h('button.icon.close', {

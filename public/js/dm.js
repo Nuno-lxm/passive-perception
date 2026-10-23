@@ -7,7 +7,7 @@ import { parseCards } from './import-text.js';
 import { api, connectRoom, imageUrl } from './net.js';
 import { formatRoomCode, normalizeRoomCode } from './room-code.js';
 import * as storage from './storage.js';
-import { $, closeButton, copyText, h, icon, openDialog, qrSvg, screenWakeLock, snackbar, themeField } from './ui.js';
+import { $, closeButton, closeDialogThen, copyText, h, icon, openDialog, qrSvg, screenWakeLock, snackbar, themeField } from './ui.js';
 import { openViewer } from './viewer.js';
 
 /**
@@ -713,15 +713,14 @@ function openCard(cardId) {
           h('span', null, `${seat.name} ${receiptIcon(card.seats[seat.id])} · ${formatWhen(/** @type {number} */ (card.seats[seat.id].revealedAt))}`),
           h('button.link', { type: 'button', onclick: () => takeBack(card, [seat.id], false) }, t('dm.takeBack'))))),
       h('div.row.actions', null,
-        h('button', { type: 'button', onclick: () => { if (dialog) dialog.close(); editCard(card.id); } }, t('dm.edit')),
+        h('button', { type: 'button', onclick: () => closeDialogThen(dialog, () => editCard(card.id)) }, t('dm.edit')),
         h('button', {
           type: 'button',
           onclick: async () => {
             const result = await call(`/cards/${card.id}/duplicate`, { method: 'POST' });
             if (!result.ok) return;
             snackbar(t('dm.duplicated'));
-            if (dialog) dialog.close();
-            openCard(result.data.card.id);
+            closeDialogThen(dialog, () => openCard(result.data.card.id));
           },
         }, t('dm.duplicate')),
         h('button.danger', {
@@ -892,8 +891,7 @@ function editCard(cardId) {
           progress.textContent = t('dm.uploading', { n: index + 1, count: picked.length });
           if (!(await uploadImage(id, file))) return;
         }
-        dialog.close();
-        if (!card) openCard(id);
+        closeDialogThen(dialog, () => !card && openCard(id));
       } finally {
         save.disabled = false;
       }
