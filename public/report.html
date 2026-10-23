@@ -13,10 +13,11 @@
   <main class="screen">
     <p><a href="/" data-i18n="privacy.back">← Tabletop Whisperer</a></p>
     <h1 data-i18n="reportPage.title">Report a problem</h1>
-    <p data-i18n="reportPage.intro">Saw something illegal or abusive that was shared through Tabletop Whisperer? Tell the people who run it. If you're a player in the room, Settings → Report a problem is quickest.</p>
+    <p data-i18n="reportPage.intro">Found a bug, or saw something illegal or abusive shared through Tabletop Whisperer? Tell the people who run it. If you're a player in the room, Settings → Report a problem is quickest.</p>
     <form id="report-form" class="stack">
       <label for="reason" data-i18n="reportPage.reason">What kind of problem?</label>
       <select id="reason">
+        <option value="bug" data-i18n="report.reason.bug">Bug or problem with the app</option>
         <option value="illegal" data-i18n="report.reason.illegal">Illegal content</option>
         <option value="abuse" data-i18n="report.reason.abuse">Harassment, hate or threats</option>
         <option value="child" data-i18n="report.reason.child">Sexual content involving a minor</option>

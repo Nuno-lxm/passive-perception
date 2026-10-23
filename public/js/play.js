@@ -392,15 +392,25 @@ function reportProblem(roomCode, token) {
   const which = /** @type {HTMLSelectElement} */ (h('select', { id: 'report-which' },
     ...items.map((item) => h('option', { value: item.id }, item.title || item.body.split('\n')[0].slice(0, 60) || t('dm.untitled'))),
     h('option', { value: '' }, t('report.somethingElse'))));
-  const reasons = ['illegal', 'abuse', 'child', 'other'];
+  const reasons = ['bug', 'illegal', 'abuse', 'child', 'other'];
   const radios = reasons.map((reason, i) => /** @type {HTMLInputElement} */ (h('input', { type: 'radio', name: 'reason', id: `reason-${reason}`, value: reason, checked: i === 0 })));
   const note = /** @type {HTMLTextAreaElement} */ (h('textarea', { id: 'report-note', rows: 3, maxlength: 2000 }));
+  // A bug isn't about one whisper: only ask "which whisper?" for content problems.
+  const whichField = h('div.field', null, h('label', { for: 'report-which' }, t('report.which')), which);
+  const noteLabel = h('label', { for: 'report-note' });
+  const update = () => {
+    const bug = radios[0].checked;
+    whichField.hidden = bug;
+    noteLabel.textContent = bug ? t('report.bugNote') : t('report.note');
+  };
+  for (const radio of radios) radio.addEventListener('change', update);
   const send = /** @type {HTMLButtonElement} */ (h('button.primary', { type: 'button' }, t('report.send')));
   send.addEventListener('click', async () => {
     const reason = radios.find((r) => r.checked)?.value ?? 'other';
-    if (!which.value && !note.value.trim()) return snackbar(t('error.report_empty'));
+    const bug = reason === 'bug';
+    if ((bug || !which.value) && !note.value.trim()) return snackbar(t('error.report_empty'));
     send.disabled = true;
-    const result = which.value
+    const result = which.value && !bug
       ? await api(`/rooms/${roomCode}/report`, { method: 'POST', auth: token, body: { cardId: which.value, reason, note: note.value } })
       : await api('/report', { method: 'POST', body: { roomCode, reason, note: note.value } });
     send.disabled = false;
@@ -412,12 +422,13 @@ function reportProblem(roomCode, token) {
     closeButton(t('common.close')),
     h('h2', null, t('report.title')),
     h('p.hint', null, t('report.intro')),
-    h('label', { for: 'report-which' }, t('report.which')), which,
     h('div.choice', null, ...reasons.map((reason, i) =>
       h('label.option', { for: `reason-${reason}` }, radios[i], h('span', null, t(`report.reason.${reason}`))))),
-    h('label', { for: 'report-note' }, t('report.note')), note,
+    whichField,
+    noteLabel, note,
     h('div.dialog-footer', null, send),
   ]);
+  update();
 }
 
 /** @param {Item} item */

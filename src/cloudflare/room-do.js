@@ -29,6 +29,15 @@ export class RoomDO extends DurableObject {
         await storage.deleteAlarm();
         await storage.deleteAll(); // the room's whole database, images included
       },
+      // Usage stats for the admin page: one small request to the AdminDO, never awaited by the room.
+      notify: (event) => {
+        if (!env.ADMIN) return;
+        const admins = env.DO_JURISDICTION ? env.ADMIN.jurisdiction(env.DO_JURISDICTION) : env.ADMIN;
+        const sent = admins.get(admins.idFromName('admin'))
+          .fetch(new Request('https://admin/event', { method: 'POST', body: JSON.stringify(event) }))
+          .catch(() => {});
+        ctx.waitUntil?.(sent);
+      },
     });
     // Clients send "ping" every 25 s; Cloudflare answers "pong" without waking this object.
     ctx.setWebSocketAutoResponse(new WebSocketRequestResponsePair('ping', 'pong'));

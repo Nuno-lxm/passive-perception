@@ -12,7 +12,7 @@ const DYNAMIC = {
   'signedOut.': ['moved', 'released', 'removed', 'left', 'other', 'roomDeleted'],
   'theme.': ['candlelit', 'light', 'dark', 'auto'],
   'dm.filter.': ['all', 'unrevealed', 'revealed'],
-  'report.reason.': ['illegal', 'abuse', 'child', 'other'],
+  'report.reason.': ['bug', 'illegal', 'abuse', 'child', 'other'],
   'import.': ['noCards', 'bodyTooLong', 'noteTooLong', 'tooMany', 'unknownPlayer', 'strayText', 'titleShortened', 'groupShortened'],
 };
 
@@ -53,5 +53,6 @@ test('every error code the server can send has a message', () => {
   codes.delete('room_code_exhausted');
   codes.delete('room_unavailable');
   codes.delete('bad_origin');
+  codes.delete('bad_event'); // internal: rooms → admin store
   for (const code of codes) assert.ok(`error.${code}` in en, `no message for error code ${code}`);
 });

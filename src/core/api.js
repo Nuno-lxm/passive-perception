@@ -113,6 +113,7 @@ async function adminApi(request, url, host) {
   }
   const path = url.pathname.slice('/api/admin'.length);
   const method = request.method;
+  if (path === '/stats' && method === 'GET') return host.admin().fetch(new Request('https://admin/stats'));
   if (path === '/reports' || path.startsWith('/reports/')) {
     return host.admin().fetch(new Request(`https://admin${path}`, { method, headers: { 'content-type': 'application/json' }, body: method === 'GET' ? undefined : await request.arrayBuffer() }));
   }
