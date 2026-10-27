@@ -11,6 +11,8 @@ export class RoomDO extends DurableObject {
   /** @param {DurableObjectState} ctx @param {any} env */
   constructor(ctx, env) {
     super(ctx, env);
+    /** One Conn per socket, so the room can keep per-socket state in memory (lost on hibernation, which is fine). */
+    this.conns = /** @type {WeakMap<WebSocket, import('../core/sockets.js').Conn>} */ (new WeakMap());
     const storage = ctx.storage;
     /** @type {import('../core/store.js').Store} */
     const store = {
@@ -50,6 +52,7 @@ export class RoomDO extends DurableObject {
       const pair = new WebSocketPair();
       const [client, server] = Object.values(pair);
       this.ctx.acceptWebSocket(server);
+      this.room.onSocketOpen(this.conn(server));
       return new Response(null, { status: 101, webSocket: client });
     }
     return this.room.handle(request);
@@ -85,13 +88,18 @@ export class RoomDO extends DurableObject {
    * @returns {import('../core/sockets.js').Conn}
    */
   conn(ws) {
-    return {
-      send: (text) => ws.send(text),
-      close: (code, reason) => ws.close(code, reason),
-      meta: () => ws.deserializeAttachment() ?? null,
-      setMeta: (meta) => ws.serializeAttachment(meta),
-      lastPong: () => this.ctx.getWebSocketAutoResponseTimestamp(ws)?.getTime() ?? null,
-    };
+    let conn = this.conns.get(ws);
+    if (!conn) {
+      conn = {
+        send: (text) => ws.send(text),
+        close: (code, reason) => ws.close(code, reason),
+        meta: () => ws.deserializeAttachment() ?? null,
+        setMeta: (meta) => ws.serializeAttachment(meta),
+        lastPong: () => this.ctx.getWebSocketAutoResponseTimestamp(ws)?.getTime() ?? null,
+      };
+      this.conns.set(ws, conn);
+    }
+    return conn;
   }
 }
 

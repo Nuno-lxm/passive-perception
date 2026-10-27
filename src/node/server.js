@@ -9,7 +9,7 @@ import { fileURLToPath } from 'node:url';
 import { WebSocketServer } from 'ws';
 import { handleApi } from '../core/api.js';
 import { normalizeRoomCode } from '../core/ids.js';
-import { Room } from '../core/room.js';
+import { HELLO_TIMEOUT, Room } from '../core/room.js';
 import { Admin } from '../core/admin.js';
 import { openStore } from './adapter.js';
 import { findAsset, readHeadersFile } from './static.js';
@@ -163,6 +163,8 @@ export function startServer({ dataDir, port, host = '0.0.0.0', expiryDays = 60, 
         notePong: () => { lastPong = Date.now(); },
       };
       entry.conns.add(conn);
+      entry.room.onSocketOpen(conn);
+      const helloTimer = setTimeout(() => entry.room.closeSilent(), HELLO_TIMEOUT + 50);
       ws.on('pong', () => { alive = true; });
       const heartbeat = setInterval(() => {
         if (!alive) return ws.terminate();
@@ -174,6 +176,7 @@ export function startServer({ dataDir, port, host = '0.0.0.0', expiryDays = 60, 
         entry.room.onSocketMessage(conn, data.toString()).catch((error) => console.error(error));
       });
       ws.on('close', () => {
+        clearTimeout(helloTimer);
         clearInterval(heartbeat);
         entry.conns.delete(conn);
         entry.room.onSocketClose(conn);

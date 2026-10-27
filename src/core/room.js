@@ -22,6 +22,11 @@ const CLAIM_TTL = 10 * 60 * 1000;
 const MAX_PENDING_CLAIMS = 20;
 const PONG_STALE = 45 * 1000;
 const MAX_MESSAGE = 4096;
+export const HELLO_TIMEOUT = 5000; // a socket that hasn't said hello by then is closed
+// Socket messages: a burst of up to MESSAGE_BURST, then MESSAGE_RATE per second; past that the socket is closed.
+// A real page sends far less (receipts are batched every ~2 s), so only a misbehaving client hits it.
+const MESSAGE_BURST = 20;
+const MESSAGE_RATE = 2;
 
 /** @typedef {import('./sockets.js').Conn} Conn */
 /**
@@ -55,6 +60,12 @@ export class Room {
     this.sockets = sockets;
     this.hooks = hooks;
     this.expiryDays = hooks.expiryDays ?? 60;
+    /**
+     * When each socket opened and its message allowance. In memory only: a Durable Object that hibernates forgets it,
+     * which only resets the allowance (and a socket still silent from before then is long past its hello).
+     * @type {WeakMap<Conn, { openedAt: number, tokens: number, at: number }>}
+     */
+    this.live = new WeakMap();
     // Migrate rooms that already exist; a fresh database stays empty until create().
     if (hasSchema(store)) migrate(store);
   }
@@ -635,6 +646,7 @@ export class Room {
    * @param {Conn} conn @param {string | ArrayBuffer} data
    */
   async onSocketMessage(conn, data) {
+    if (!this.allowMessage(conn) || this.closeSilent().includes(conn)) return;
     if (data === 'ping') {
       // Cloudflare answers pings itself without waking the room; this is the Node host.
       conn.send('pong');
@@ -667,6 +679,46 @@ export class Room {
     } else if (meta.role === 'dm' && message.t === 'presence') {
       this.send(conn, { t: 'presence', seats: this.presence() });
     }
+  }
+
+  /**
+   * A new socket. It gets HELLO_TIMEOUT to say hello. Older silent sockets are closed now; the Node host also
+   * calls closeSilent() after the timeout, while on Cloudflare (no timers) the next socket event does it.
+   * @param {Conn} conn
+   */
+  onSocketOpen(conn) {
+    const now = this.store.now();
+    this.live.set(conn, { openedAt: now, tokens: MESSAGE_BURST, at: now });
+    this.closeSilent();
+  }
+
+  /** Closes sockets that opened more than HELLO_TIMEOUT ago without a hello, and returns them. */
+  closeSilent() {
+    const now = this.store.now();
+    const silent = this.sockets.all().filter((conn) => {
+      const openedAt = this.live.get(conn)?.openedAt;
+      return !conn.meta() && (openedAt === undefined || now - openedAt >= HELLO_TIMEOUT);
+    });
+    for (const conn of silent) this.closeConn(conn, 4002, 'no_hello');
+    return silent;
+  }
+
+  /**
+   * Takes one message from the socket's allowance, refilled at MESSAGE_RATE per second. Over it, the socket is closed.
+   * @param {Conn} conn
+   */
+  allowMessage(conn) {
+    const now = this.store.now();
+    let live = this.live.get(conn);
+    if (!live) this.live.set(conn, (live = { openedAt: now, tokens: MESSAGE_BURST, at: now }));
+    live.tokens = Math.min(MESSAGE_BURST, live.tokens + ((now - live.at) / 1000) * MESSAGE_RATE);
+    live.at = now;
+    if (live.tokens < 1) {
+      this.closeConn(conn, 4003, 'too_fast');
+      return false;
+    }
+    live.tokens -= 1;
+    return true;
   }
 
   /** @param {Conn} conn */
@@ -796,8 +848,13 @@ export class Room {
   /** @param {Conn} conn @param {string} reason */
   signOutConn(conn, reason) {
     this.send(conn, { t: 'signedOut', reason });
+    this.closeConn(conn, 4000, reason);
+  }
+
+  /** @param {Conn} conn @param {number} code @param {string} reason */
+  closeConn(conn, code, reason) {
     try {
-      conn.close(4000, reason);
+      conn.close(code, reason);
     } catch {
       // already closed
     }
@@ -896,13 +953,7 @@ export class Room {
       const frozen = (await readJson(request))?.frozen === true;
       this.setMeta('frozen', frozen ? 1 : 0);
       // Everyone reconnects and gets the room as it now is (frozen: no feed for players, read-only for the DM).
-      for (const conn of this.sockets.all()) {
-        try {
-          conn.close(4001, 'refresh');
-        } catch {
-          // already closed
-        }
-      }
+      for (const conn of this.sockets.all()) this.closeConn(conn, 4001, 'refresh');
       return json({ frozen });
     }
     if (method === 'POST' && pathname === '/admin/delete') return await this.deleteRoom('deleted');

@@ -149,3 +149,46 @@ test('bad hellos are closed and receive nothing', async () => {
   await silent.message({ t: 'seen', ids: ['x'] });
   assert.deepEqual(silent.sent, [], 'nothing before hello');
 });
+
+test('a socket that never says hello is closed after 5 s; one that does stays open', async () => {
+  const r = testRoom();
+  const { tokens } = await r.setup();
+  const silent = r.connect();
+  r.clock.now += 4_000;
+  const ana = await r.join({ role: 'player', token: tokens.Ana });
+  assert.equal(silent.closed, null, 'still within its 5 s');
+  r.clock.now += 1_000;
+  r.room.closeSilent(); // the Node host's timer; on Cloudflare the next socket event does the same
+  assert.deepEqual(silent.closed, { code: 4002, reason: 'no_hello' });
+  assert.deepEqual(silent.sent, []);
+  assert.equal(ana.closed, null);
+
+  // A late hello is too late.
+  const late = r.connect();
+  r.clock.now += 6_000;
+  await late.message({ t: 'hello', role: 'player', token: tokens.Bruno });
+  assert.equal(late.closed?.code, 4002);
+  assert.deepEqual(late.sent, []);
+});
+
+test('a socket that floods messages is closed; normal use never is', async () => {
+  const r = testRoom();
+  const { key, tokens } = await r.setup();
+  const dm = await r.join({ role: 'dm', key });
+  const ana = await r.join({ role: 'player', token: tokens.Ana });
+  // A busy evening, sped up: receipts every 2 s, pings, tab switches.
+  for (let i = 0; i < 300; i++) {
+    r.clock.now += 1_000;
+    await ana.message(i % 2 ? { t: 'seen', ids: [] } : { t: 'state', visible: i % 4 === 0 });
+  }
+  assert.equal(ana.closed, null);
+
+  const bruno = await r.join({ role: 'player', token: tokens.Bruno });
+  const before = dm.all('presence').length;
+  for (let i = 0; i < 100 && !bruno.closed; i++) await bruno.message({ t: 'state', visible: true });
+  assert.deepEqual(bruno.closed, { code: 4003, reason: 'too_fast' });
+  const presence = dm.all('presence').length;
+  assert.ok(presence - before <= 20, `the DM got ${presence} presence updates`);
+  await bruno.message({ t: 'state', visible: false });
+  assert.equal(dm.all('presence').length, presence, 'nothing handled after closing');
+});

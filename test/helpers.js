@@ -68,6 +68,7 @@ export function testRoom() {
         conn.sent.push(text === 'pong' ? text : JSON.parse(text));
       },
       close(code, reason) {
+        if (conn.closed) return; // like a real socket, it closes once
         conn.closed = { code, reason };
         open.delete(conn);
         room.onSocketClose(conn);
@@ -85,6 +86,7 @@ export function testRoom() {
       all: (t) => conn.sent.filter((m) => m.t === t),
     };
     open.add(conn);
+    room.onSocketOpen(conn);
     return conn;
   }
 
