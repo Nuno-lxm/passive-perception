@@ -1,6 +1,6 @@
 // End-to-end check against a running host, over real HTTP and WebSockets.
 //   node test/smoke.js http://localhost:8787          (wrangler dev)
-//   node test/smoke.js https://<staging>.workers.dev   (staging; creates a small test room)
+//   node test/smoke.js https://<staging>.workers.dev   (staging; creates a small test room and deletes it)
 // test/server.test.js runs it against the Node host on every `pnpm test`.
 import assert from 'node:assert/strict';
 
@@ -52,30 +52,40 @@ export async function runSmoke(base) {
   assert.equal(dmWs.first.role, 'dm');
 
   const card = (await api('POST', `/rooms/${code}/cards`, { auth: adminKey, body: { title: SECRET, body: 'only Ana' } })).data.card;
-  const image = (await api('POST', `/rooms/${code}/cards/${card.id}/images`, { auth: adminKey, raw: PNG })).data.image;
-  assert.ok(image?.id, 'image uploaded');
+  const uploaded = await api('POST', `/rooms/${code}/cards/${card.id}/images`, { auth: adminKey, raw: PNG });
+  // A service at its storage cap refuses images on purpose. That's no reason to fail a deploy; the text checks still run.
+  const storageFull = uploaded.data.error === 'storage_full';
+  if (storageFull) console.warn('storage is at its cap: skipping the image checks');
+  const image = uploaded.data.image;
+  assert.ok(storageFull || image?.id, 'image uploaded');
   await api('POST', `/rooms/${code}/cards/${card.id}/reveal`, { auth: adminKey, body: { seats: [seat.Ana] } });
 
   const item = await anaWs.waitFor((m) => m.t === 'item' && m.item.id === card.id);
   assert.equal(item.fresh, true);
-  assert.equal(item.item.images[0].id, image.id);
-  assert.equal((await api('GET', `/rooms/${code}/images/${image.id}`, { auth: ana })).status, 200);
-  assert.equal((await api('GET', `/rooms/${code}/images/${image.id}`, { auth: bruno })).status, 404);
+  if (image) {
+    assert.equal(item.item.images[0].id, image.id);
+    assert.equal((await api('GET', `/rooms/${code}/images/${image.id}`, { auth: ana })).status, 200);
+    assert.equal((await api('GET', `/rooms/${code}/images/${image.id}`, { auth: bruno })).status, 404);
+  }
 
   anaWs.send({ t: 'seen', ids: [card.id] });
   await dmWs.waitFor((m) => m.t === 'receipt' && m.receipt.seen);
 
   // Give any stray message time to arrive, then check Bruno got nothing about the card.
   await new Promise((resolve) => setTimeout(resolve, 300));
-  for (const leak of [SECRET, card.id, image.id]) assert.ok(!brunoWs.raw.join('\n').includes(leak), `Bruno received ${leak}`);
+  for (const leak of [SECRET, card.id, ...(image ? [image.id] : [])]) assert.ok(!brunoWs.raw.join('\n').includes(leak), `Bruno received ${leak}`);
   const brunoAgain = await socket(`${wsBase}/api/rooms/${code}/ws`, { t: 'hello', role: 'player', token: bruno });
   assert.deepEqual(brunoAgain.first.feed, []);
 
   await api('POST', `/rooms/${code}/cards/${card.id}/unreveal`, { auth: adminKey, body: { seats: [seat.Ana] } });
   await anaWs.waitFor((m) => m.t === 'remove' && m.id === card.id);
-  assert.equal((await api('GET', `/rooms/${code}/images/${image.id}`, { auth: ana })).status, 404);
+  if (image) assert.equal((await api('GET', `/rooms/${code}/images/${image.id}`, { auth: ana })).status, 404);
 
   for (const s of [anaWs, brunoWs, dmWs, brunoAgain]) s.close();
+
+  // Live hosts run this on every deploy, so leave nothing behind.
+  assert.equal((await api('DELETE', `/rooms/${code}/room`, { auth: adminKey })).status, 200);
+  assert.equal((await api('GET', `/rooms/${code}`)).status, 404);
   return { code };
 }
 
