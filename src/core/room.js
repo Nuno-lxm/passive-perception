@@ -66,6 +66,7 @@ export class Room {
      * @type {WeakMap<Conn, { openedAt: number, tokens: number, at: number }>}
      */
     this.live = new WeakMap();
+    this.deleted = false;
     // Migrate rooms that already exist; a fresh database stays empty until create().
     if (hasSchema(store)) migrate(store);
   }
@@ -723,6 +724,8 @@ export class Room {
 
   /** @param {Conn} conn */
   onSocketClose(conn) {
+    // Deleting a room closes its sockets, but they report closing only after its database has gone.
+    if (this.deleted) return;
     if (conn.meta()?.role === 'player') this.toDms({ t: 'presence', seats: this.presence() });
   }
 
@@ -1025,6 +1028,7 @@ export class Room {
    * @param {'deleted' | 'expired'} reason
    */
   async deleteRoom(reason) {
+    this.deleted = true;
     this.notify('deleted');
     for (const conn of this.sockets.all()) this.signOutConn(conn, 'roomDeleted');
     if (this.hooks.destroy) {

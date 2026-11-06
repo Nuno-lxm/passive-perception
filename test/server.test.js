@@ -58,3 +58,35 @@ test('Node host serves the app and the API', async (t) => {
   assert.ok(!readdirSync(join(dataDir, 'rooms')).some((f) => f.startsWith(made.code)), 'room files deleted');
   assert.equal((await fetch(`${base}/api/rooms/${made.code}`)).status, 404);
 });
+
+test('deleting a room with a player connected signs them out and leaves the server running', async (t) => {
+  const dataDir = mkdtempSync(join(tmpdir(), 'whisperer-'));
+  const server = startServer({ dataDir, port: 0, host: '127.0.0.1' });
+  await once(server, 'listening');
+  const base = `http://127.0.0.1:${/** @type {any} */ (server.address()).port}`;
+  t.after(() => {
+    server.close();
+    rmSync(dataDir, { recursive: true, force: true });
+  });
+  const post = async (path, body) => (await fetch(`${base}/api${path}`, {
+    method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body),
+  })).json();
+
+  const room = await post('/rooms', { name: 'Gone', seats: ['Ana'] });
+  const { seats: [ana] } = await (await fetch(`${base}/api/rooms/${room.code}`)).json();
+  const { token } = await post(`/rooms/${room.code}/claim`, { seatId: ana.id });
+  const ws = new WebSocket(`${base.replace('http', 'ws')}/api/rooms/${room.code}/ws`);
+  const messages = [];
+  ws.onmessage = (event) => messages.push(JSON.parse(event.data));
+  await new Promise((resolve) => { ws.onopen = resolve; });
+  ws.send(JSON.stringify({ t: 'hello', role: 'player', token }));
+  while (!messages.length) await new Promise((resolve) => setTimeout(resolve, 10));
+
+  const closed = new Promise((resolve) => { ws.onclose = resolve; });
+  const deleted = await fetch(`${base}/api/rooms/${room.code}/room`, { method: 'DELETE', headers: { authorization: `Bearer ${room.adminKey}` } });
+  assert.equal(deleted.status, 200);
+  await closed;
+  await new Promise((resolve) => setTimeout(resolve, 50)); // the server's own close event comes around now
+  assert.equal(messages.at(-1).reason, 'roomDeleted');
+  assert.ok((await post('/rooms', { name: 'Still here', seats: ['Ana'] })).code, 'the server still answers');
+});
