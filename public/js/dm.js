@@ -250,11 +250,12 @@ function tablePane() {
   }));
   const photo = /** @type {HTMLInputElement} */ (h('input', { type: 'file', accept: 'image/*', id: 'quick-photo', class: 'visually-hidden' }));
   const photoLabel = h('label.button', { for: 'quick-photo' }, t('dm.addPhoto'));
-  photo.addEventListener('change', () => {
+  const showPhoto = () => {
     const file = photo.files?.[0];
     photoLabel.replaceChildren(icon('image', 18), h('span.file-name', null, file ? file.name : t('dm.addPhoto')));
-  });
-  photoLabel.replaceChildren(icon('image', 18), h('span.file-name', null, t('dm.addPhoto')));
+  };
+  photo.addEventListener('change', showPhoto);
+  showPhoto();
   const chips = h('div.chips');
   const send = /** @type {HTMLButtonElement} */ (h('button.primary.reveal', { type: 'button', 'aria-keyshortcuts': 'Control+Enter' }));
   const recent = h('div.recent');
@@ -269,12 +270,18 @@ function tablePane() {
       const created = await call('/cards', { method: 'POST', body: { body: text.value, quick: true } });
       if (!created.ok) return;
       const card = created.data.card;
-      if (photo.files?.[0] && !(await uploadImage(card.id, photo.files[0]))) return;
+      if (photo.files?.[0] && !(await uploadImage(card.id, photo.files[0]))) {
+        // Nobody got this card. Remove it and drop the photo, so the next tap can still send the text.
+        await call(`/cards/${card.id}`, { method: 'DELETE' });
+        photo.value = '';
+        showPhoto();
+        return;
+      }
       const revealed = await revealCard(card.id, seats, everyone);
       if (revealed) {
         text.value = '';
         photo.value = '';
-        photoLabel.replaceChildren(icon('image', 18), h('span.file-name', null, t('dm.addPhoto')));
+        showPhoto();
         state.quickSeats.clear();
         state.quickEveryone = false;
         changed();
