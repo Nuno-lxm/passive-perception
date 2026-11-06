@@ -6,6 +6,7 @@
 // for duration. So no timers here, and per-connection state lives in the socket's attachment, not in fields.
 import { DurableObject } from 'cloudflare:workers';
 import { Room } from '../core/room.js';
+import { STORAGE_CAP, storageFull } from '../core/admin.js';
 
 export class RoomDO extends DurableObject {
   /** @param {DurableObjectState} ctx @param {any} env */
@@ -25,7 +26,13 @@ export class RoomDO extends DurableObject {
     const sockets = {
       all: () => ctx.getWebSockets().filter((ws) => ws.readyState === WebSocket.OPEN).map((ws) => this.conn(ws)),
     };
+    const admin = () => {
+      const admins = env.DO_JURISDICTION ? env.ADMIN.jurisdiction(env.DO_JURISDICTION) : env.ADMIN;
+      return admins.get(admins.idFromName('admin'));
+    };
+    const cap = Number(env.STORAGE_CAP ?? STORAGE_CAP); // 0 = no cap
     this.room = new Room(store, sockets, {
+      storageFull: () => (env.ADMIN && cap > 0 ? storageFull(admin(), cap) : false),
       expiryDays: env.ROOM_EXPIRY_DAYS === undefined ? 60 : Number(env.ROOM_EXPIRY_DAYS),
       setAlarm: (at) => void storage.setAlarm(at),
       destroy: async () => {
@@ -35,8 +42,7 @@ export class RoomDO extends DurableObject {
       // Usage stats for the admin page: one small request to the AdminDO, never awaited by the room.
       notify: (event) => {
         if (!env.ADMIN) return;
-        const admins = env.DO_JURISDICTION ? env.ADMIN.jurisdiction(env.DO_JURISDICTION) : env.ADMIN;
-        const sent = admins.get(admins.idFromName('admin'))
+        const sent = admin()
           .fetch(new Request('https://admin/event', { method: 'POST', body: JSON.stringify(event) }))
           .catch(() => {});
         ctx.waitUntil?.(sent);

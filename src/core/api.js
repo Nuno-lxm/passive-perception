@@ -14,6 +14,8 @@ import { json, fail, readJson } from './http.js';
  *   Rate limiting; true lets the request through. Hosts without it allow everything.
  * @property {() => RoomStub} [admin]  The reports store. Hosts without it have no reporting.
  * @property {string} [adminToken]      ADMIN_TOKEN: unlocks /api/admin/…. Unset = no admin page.
+ * @property {(request: Request) => string} [clientIp]
+ *   The caller's address, for the admin store's hourly and daily room limits. Hosts without it don't use those limits.
  *
  * @typedef {{ fetch(request: Request): Promise<Response> }} RoomStub
  */
@@ -57,6 +59,10 @@ export async function handleApi(request, host) {
     if (host.allow && !(await host.allow(request, 'create'))) return fail('rate_limited', 429);
     const body = await readJson(request);
     if (!body || typeof body !== 'object') return fail('bad_json', 400);
+    if (host.clientIp && host.admin) {
+      const quota = await host.admin().fetch(internal('POST', '/room-quota', { ip: host.clientIp(request) }));
+      if (!quota.ok) return quota;
+    }
     for (let attempt = 0; attempt < CREATE_ATTEMPTS; attempt++) {
       const code = newRoomCode();
       const room = host.room(code, { create: true });

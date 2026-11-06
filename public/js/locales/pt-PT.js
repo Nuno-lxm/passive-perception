@@ -281,6 +281,8 @@ export default {
   'error.over_capacity': 'O serviço gratuito atingiu o limite de hoje. Volta a funcionar à meia-noite UTC. Também podes correr a tua própria cópia.',
   'error.server_error': 'O servidor teve um problema. Tenta outra vez.',
   'error.rate_limited': 'Demasiadas tentativas. Espera um minuto e tenta outra vez.',
+  'error.too_many_rooms': 'Demasiadas salas novas nesta rede por agora. Tenta mais tarde, ou corre a tua própria cópia.',
+  'error.storage_full': 'O espaço para imagens neste serviço gratuito está cheio. O texto continua a funcionar, e podes correr a tua própria cópia.',
   'error.unauthorized': 'Não autorizado. O teu link ou lugar pode ter mudado.',
   'error.locked': 'Demasiadas tentativas erradas. Bloqueado até uma hora.',
   'error.forbidden': 'Não autorizado.',

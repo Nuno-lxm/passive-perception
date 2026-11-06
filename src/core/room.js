@@ -37,6 +37,8 @@ const MESSAGE_RATE = 2;
  * @property {() => void | Promise<void>} [destroy]  Remove the room's storage entirely. Default: drop its tables.
  * @property {(event: { type: string, code: string, bytes?: number }) => void} [notify]
  *   Tell the admin store (usage stats) something happened. Fire and forget; it must never slow the room down.
+ * @property {() => boolean | Promise<boolean>} [storageFull]
+ *   Has the whole service reached its image cap? Hosts without a shared limit (Node) leave this out.
  */
 /** @typedef {{ role: 'dm' } | { role: 'player', seat: { id: string, name: string } }} Auth */
 
@@ -120,7 +122,7 @@ export class Room {
       if (method === 'PATCH' && pathname === '/room') return this.patchRoom(body);
       if (method === 'DELETE' && pathname === '/room') return await this.deleteRoom('deleted');
       if (method === 'GET' && pathname === '/export') return this.exportCampaign();
-      if (method === 'POST' && pathname === '/import') return this.importCampaign(body);
+      if (method === 'POST' && pathname === '/import') return await this.importCampaign(body);
       if (method === 'POST' && pathname === '/import/done') return this.finishImport();
       if (method === 'POST' && pathname === '/rotate-key') return await this.rotateKey();
       if (method === 'POST' && pathname === '/seats') return this.addSeat(body);
@@ -135,7 +137,7 @@ export class Room {
       }
       if (method === 'POST' && pathname === '/cards') return this.addCard(body);
       if (method === 'POST' && pathname === '/cards/bulk') return this.importCards(body);
-      if (method === 'POST' && (m = pathname.match(/^\/cards\/([^/]+)\/duplicate$/))) return this.duplicateCard(m[1]);
+      if (method === 'POST' && (m = pathname.match(/^\/cards\/([^/]+)\/duplicate$/))) return await this.duplicateCard(m[1]);
       if ((m = pathname.match(/^\/cards\/([^/]+)$/))) {
         if (method === 'PATCH') return this.editCard(m[1], body);
         if (method === 'DELETE') return this.deleteCard(m[1]);
@@ -143,7 +145,7 @@ export class Room {
       if (method === 'POST' && (m = pathname.match(/^\/cards\/([^/]+)\/reveal$/))) return this.reveal(m[1], body);
       if (method === 'POST' && (m = pathname.match(/^\/cards\/([^/]+)\/unreveal$/))) return this.unreveal(m[1], body);
       if (method === 'POST' && (m = pathname.match(/^\/cards\/([^/]+)\/images$/))) {
-        return this.addImage(m[1], /** @type {Uint8Array} */ (raw));
+        return await this.addImage(m[1], /** @type {Uint8Array} */ (raw));
       }
       if (method === 'PUT' && (m = pathname.match(/^\/images\/([^/]+)\/thumb$/))) {
         return this.setThumb(m[1], /** @type {Uint8Array} */ (raw));
@@ -419,7 +421,9 @@ export class Room {
   }
 
   /** A copy right after the original: text, group, note, players and images, but nothing revealed. @param {string} cardId */
-  duplicateCard(cardId) {
+  async duplicateCard(cardId) {
+    const hasImages = this.store.sql(`SELECT 1 FROM images WHERE card_id = ? LIMIT 1`, cardId).length > 0;
+    if (hasImages && await this.hooks.storageFull?.()) return fail('storage_full', 507);
     const [card] = this.store.sql(`SELECT title, body, grp, note, for_seats, sort FROM cards WHERE id = ?`, cardId);
     if (!card) return fail('card_not_found', 404);
     this.assertRoomForCards(1);
@@ -569,25 +573,40 @@ export class Room {
 
   // ---------- Images
 
-  /** @param {string} cardId @param {Uint8Array} bytes */
-  addImage(cardId, bytes) {
+  /**
+   * The room's own checks on an upload: a refusal, or what's needed to store it.
+   * @param {string} cardId @param {Uint8Array} bytes
+   */
+  checkUpload(cardId, bytes) {
     if (!this.cardExists(cardId)) return fail('card_not_found', 404);
     const checked = checkImage(bytes, IMAGE_LIMITS.bytes);
     if (!checked.image) return fail(/** @type {string} */ (checked.error), 400);
-    const now = this.store.now();
     const [{ onCard }] = this.store.sql(`SELECT count(*) AS onCard FROM images WHERE card_id = ?`, cardId);
     if (onCard >= IMAGE_LIMITS.perCard) return fail('too_many_images', 400);
     const [{ recent, total }] = this.store.sql(
-      `SELECT sum(created_at > ?) AS recent, coalesce(sum(bytes), 0) AS total FROM images`, now - HOUR,
+      `SELECT sum(created_at > ?) AS recent, coalesce(sum(bytes), 0) AS total FROM images`, this.store.now() - HOUR,
     );
     if ((recent ?? 0) >= IMAGE_LIMITS.uploadsPerHour) return fail('too_many_uploads', 429);
     if (total + bytes.length > IMAGE_LIMITS.roomBytes) return fail('room_storage_full', 400);
+    return { image: checked.image, onCard: Number(onCard) };
+  }
+
+  /** @param {string} cardId @param {Uint8Array} bytes */
+  async addImage(cardId, bytes) {
+    // The service-wide cap comes last, so only uploads this room would take cost a request to the admin store.
+    const allowed = this.checkUpload(cardId, bytes);
+    if (allowed instanceof Response) return allowed;
+    if (await this.hooks.storageFull?.()) return fail('storage_full', 507);
+    // Other requests can run during that wait, so check again.
+    const upload = this.checkUpload(cardId, bytes);
+    if (upload instanceof Response) return upload;
 
     const id = newId();
-    const { mime, w, h } = checked.image;
+    const now = this.store.now();
+    const { mime, w, h } = upload.image;
     this.store.sql(
       `INSERT INTO images (id, card_id, sort, mime, w, h, bytes, data, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      id, cardId, onCard, mime, w, h, bytes.length, bytes, now,
+      id, cardId, upload.onCard, mime, w, h, bytes.length, bytes, now,
     );
     this.imagesChanged(cardId, now);
     return json({ image: { id, w, h, bytes: bytes.length } }, 201);
@@ -982,8 +1001,10 @@ export class Room {
   }
 
   /** @param {any} body  a batch of exported cards (seat ids already mapped to this room's) */
-  importCampaign(body) {
+  async importCampaign(body) {
     if (Number(this.meta().import_until ?? 0) < this.store.now()) return fail('import_closed', 403);
+    const hasImages = Array.isArray(body?.cards) && body.cards.some((/** @type {any} */ card) => card?.images?.length);
+    if (hasImages && await this.hooks.storageFull?.()) return fail('storage_full', 507);
     const imported = importBatch(this.store, body, newId);
     this.notify('bytes');
     return json({ imported });

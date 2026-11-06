@@ -89,7 +89,10 @@ and set an `ADMIN_TOKEN` so people can send reports.
 | Node / Docker | `DATA_DIR` | `./data` (`/data` in Docker) | One SQLite file per room, plus `admin.sqlite` |
 | Node / Docker | `PUBLIC_URL` | your network addresses | The address players use (shown in the join QR) |
 | both | `ROOM_EXPIRY_DAYS` | `60` | Delete rooms unused this long; `0` keeps them forever |
+| Cloudflare | `STORAGE_CAP` | `4000000000` | Stop taking new images once all rooms together use this many bytes (the free plan has 5 GB). Text keeps working. `0` turns it off |
 | both | `ADMIN_TOKEN` | not set | Turns on content reports and the `/admin` page (stats, reports). Use a long random token or a passphrase of 5+ random words; 10 wrong tries in an hour lock `/admin` for up to an hour. On Cloudflare, set it with `wrangler secret put ADMIN_TOKEN` |
+
+On Cloudflare, put settings in `vars` in `wrangler.jsonc`: each `wrangler deploy` removes variables set only in the dashboard (`ADMIN_TOKEN` is a secret, so it stays).
 
 Backups on Node/Docker: copy the data folder. From the app: Room → Export campaign (works between all versions).
 

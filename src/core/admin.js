@@ -3,7 +3,7 @@
 // Cloudflare: a single AdminDO. Node: data/admin.sqlite. Only the API router talks to it, and only the operator
 // (holding ADMIN_TOKEN) can read it. Closed reports are deleted after 90 days.
 import { migrate } from './schema.js';
-import { newId } from './ids.js';
+import { newId, newSecret, sha256 } from './ids.js';
 import { fail, json, readJson } from './http.js';
 
 const DAY = 24 * 60 * 60 * 1000;
@@ -26,28 +26,71 @@ const ADMIN_MIGRATIONS = [
   ],
   // 3: when wrong admin tokens were tried (only the time).
   [`CREATE TABLE login_failures (at INTEGER NOT NULL)`],
+  // 4: rooms created today, by a hash that can't be linked to an address once the day's salt is gone (see roomQuota).
+  [`CREATE TABLE room_creations (ip_hash TEXT NOT NULL, at INTEGER NOT NULL)`],
 ];
 // Wrong admin tokens, counted for the whole service (no IP addresses kept): this many in an hour lock the admin API,
 // for everyone, until the oldest is an hour old. At most 240 guesses a day, so even a passphrase can't be guessed.
 const LOGIN_FAILURES = 10;
 const LOGIN_WINDOW = 60 * 60 * 1000;
 const STORAGE_LIMIT = 5_000_000_000; // the Durable Objects free tier
+// Where the hosted service stops taking images. Text keeps working, and the margin leaves room for it.
+export const STORAGE_CAP = 4_000_000_000;
+const STORAGE_TALLY_AGE = 60 * 1000;
+// Rooms one address can create. Each can hold 50 MB of images, so these also limit how fast one address can fill the storage.
+const ROOMS_PER_HOUR = 5;
+const ROOMS_PER_DAY = 20;
 
 /** @param {unknown} value @param {number} max */
 const text = (value, max) => (typeof value === 'string' ? value.normalize('NFC').trim().slice(0, max) : '');
+
+/**
+ * What counts as one address: an IPv6 connection usually has a whole /64 to pick from, so it counts as one.
+ * @param {string} ip
+ */
+function addressBlock(ip) {
+  if (!ip.includes(':') || ip.includes('.')) return ip; // IPv4, also when written as ::ffff:1.2.3.4
+  const [head, tail] = ip.toLowerCase().split('::');
+  const left = head ? head.split(':') : [];
+  const right = tail ? tail.split(':') : [];
+  const groups = [...left, ...Array(Math.max(0, 8 - left.length - right.length)).fill('0'), ...right];
+  return groups.slice(0, 4).map((group) => parseInt(group, 16).toString(16)).join(':');
+}
+
+/**
+ * Whether the service's images have reached the cap, going by the admin store's tally.
+ * If the store can't answer, uploads carry on: a working table matters more than the cap. That's logged, because
+ * from the outside an unprotected service looks just like a healthy one.
+ * @param {{ fetch(request: Request): Promise<Response> }} admin @param {number} [cap]
+ */
+export async function storageFull(admin, cap = STORAGE_CAP) {
+  try {
+    const response = await admin.fetch(new Request('https://admin/storage'));
+    if (!response.ok) throw new Error(`status ${response.status}`);
+    const { bytes } = await response.json();
+    return bytes >= cap;
+  } catch (error) {
+    console.error('Storage cap not checked, allowing the upload:', error);
+    return false;
+  }
+}
 
 export class Admin {
   /** @param {import('./store.js').Store} store */
   constructor(store) {
     this.store = store;
     migrate(store, ADMIN_MIGRATIONS);
+    /** @type {{ bytes: number, at: number } | null} */
+    this.tally = null;
   }
 
   /** @param {Request} request  Internal requests from the API router (which checked ADMIN_TOKEN where needed). */
   async handle(request) {
     const { pathname } = new URL(request.url);
+    if (request.method === 'GET' && pathname === '/storage') return this.storage();
     this.store.sql(`DELETE FROM reports WHERE status = 'closed' AND closed_at < ?`, this.store.now() - KEEP_CLOSED);
     let m;
+    if (request.method === 'POST' && pathname === '/room-quota') return this.roomQuota(await readJson(request));
     if (request.method === 'POST' && pathname === '/login') return this.login(await readJson(request));
     if (request.method === 'POST' && pathname === '/report') return this.addReport(await readJson(request));
     if (request.method === 'POST' && pathname === '/event') return this.event(await readJson(request));
@@ -75,6 +118,43 @@ export class Admin {
       return fail('unauthorized', 401);
     }
     return json({ ok: true });
+  }
+
+  /** Bytes across all rooms. Uploads ask for this, and a sum reads every room's row, so it's kept for a minute. */
+  storage() {
+    const now = this.store.now();
+    if (!this.tally || now - this.tally.at >= STORAGE_TALLY_AGE) {
+      const [{ bytes }] = this.store.sql(`SELECT coalesce(sum(bytes), 0) AS bytes FROM rooms`);
+      this.tally = { bytes: Number(bytes), at: now };
+    }
+    return json({ bytes: this.tally.bytes });
+  }
+
+  /**
+   * May this address create a room? If so, counts it. Keeps only a hash with a salt that changes every UTC day;
+   * the salt and that day's hashes are deleted together, so the count starts again each day.
+   * @param {any} body  { ip }
+   */
+  async roomQuota(body) {
+    const hash = await sha256(`${this.dailySalt()}:${addressBlock(String(body?.ip))}`);
+    const now = this.store.now();
+    const [{ day, hour }] = this.store.sql(
+      `SELECT count(*) AS day, sum(at > ?) AS hour FROM room_creations WHERE ip_hash = ?`, now - LOGIN_WINDOW, hash,
+    );
+    if (day >= ROOMS_PER_DAY || (hour ?? 0) >= ROOMS_PER_HOUR) return fail('too_many_rooms', 429);
+    this.store.sql(`INSERT INTO room_creations (ip_hash, at) VALUES (?, ?)`, hash, now);
+    return json({ ok: true });
+  }
+
+  /** Today's salt. A new day replaces it and deletes the hashes made with the old one. */
+  dailySalt() {
+    const day = new Date(this.store.now()).toISOString().slice(0, 10);
+    const [row] = this.store.sql(`SELECT value FROM meta WHERE key = 'ip_salt'`);
+    if (String(row?.value).startsWith(`${day}:`)) return String(row.value);
+    const salt = `${day}:${newSecret()}`;
+    this.store.sql(`DELETE FROM room_creations`);
+    this.store.sql(`INSERT OR REPLACE INTO meta (key, value) VALUES ('ip_salt', ?)`, salt);
+    return salt;
   }
 
   /** @param {any} body  { kind: 'player' | 'public', roomCode, cardId, reason, note, contact, snapshot } */

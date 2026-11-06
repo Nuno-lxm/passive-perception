@@ -281,6 +281,8 @@ export default {
   'error.over_capacity': 'The free service hit today’s limit. It resets at midnight UTC. You can also run your own copy.',
   'error.server_error': 'The server had a problem. Try again.',
   'error.rate_limited': 'Too many tries. Wait a minute and try again.',
+  'error.too_many_rooms': 'Too many new rooms from this network for now. Try again later, or run your own copy.',
+  'error.storage_full': 'Image storage on this free service is full. Text still works, and you can run your own copy.',
   'error.unauthorized': 'Not allowed. Your link or seat may have changed.',
   'error.forbidden': 'Not allowed.',
   'error.locked': 'Too many wrong tries. Locked for up to an hour.',

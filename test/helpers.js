@@ -1,21 +1,29 @@
 // Shared test setup: rooms on in-memory node:sqlite, the same engine family as the Durable Objects.
 import { Room } from '../src/core/room.js';
-import { Admin } from '../src/core/admin.js';
+import { Admin, storageFull } from '../src/core/admin.js';
 import { openStore } from '../src/node/adapter.js';
 
-/** A Host for the API router that keeps every room in memory. Pass an adminToken to turn on reports. */
-export function memoryHost({ adminToken } = {}) {
+/**
+ * A Host for the API router that keeps every room in memory. Pass an adminToken to turn on reports.
+ * Pass storageCap and clientIp to turn on the limits the Cloudflare host uses (the caller's address comes from x-client-ip).
+ */
+export function memoryHost({ adminToken, storageCap, clientIp } = {}) {
   const rooms = new Map();
-  const admin = adminToken ? new Admin(openStore(':memory:')) : null;
+  const adminStore = adminToken ? openStore(':memory:') : null;
+  const admin = adminStore ? new Admin(adminStore) : null;
+  const adminStub = admin ? { fetch: (request) => admin.handle(request) } : null;
   return {
     rooms,
     adminToken,
-    admin: admin ? () => ({ fetch: (request) => admin.handle(request) }) : undefined,
+    adminStore,
+    admin: adminStub ? () => adminStub : undefined,
+    clientIp: clientIp ? (request) => request.headers.get('x-client-ip') ?? 'unknown' : undefined,
     room(code, { create }) {
       if (!rooms.has(code)) {
         if (!create) return null;
         const notify = admin ? (event) => admin.handle(new Request('https://admin/event', { method: 'POST', body: JSON.stringify(event) })) : undefined;
-        rooms.set(code, new Room(openStore(':memory:'), undefined, { notify }));
+        const full = storageCap ? () => storageFull(adminStub, storageCap) : undefined;
+        rooms.set(code, new Room(openStore(':memory:'), undefined, { notify, storageFull: full }));
       }
       return { fetch: (request) => rooms.get(code).handle(request) };
     },

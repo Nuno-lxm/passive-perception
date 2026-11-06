@@ -34,6 +34,9 @@ export default {
   },
 };
 
+/** @param {Request} request */
+const clientIp = (request) => request.headers.get('cf-connecting-ip') ?? 'unknown';
+
 /** @param {Env} env @returns {import('../core/api.js').Host} */
 function cloudflareHost(env) {
   const rooms = env.DO_JURISDICTION ? env.ROOM.jurisdiction(/** @type {any} */ (env.DO_JURISDICTION)) : env.ROOM;
@@ -41,14 +44,14 @@ function cloudflareHost(env) {
   return {
     admin: admins ? () => admins.get(admins.idFromName('admin')) : undefined,
     adminToken: env.ADMIN_TOKEN,
+    clientIp,
     // A Durable Object exists as soon as it's addressed; Room writes nothing until create().
     room: (code) => rooms.get(rooms.idFromName(code)),
     // Approximate: Cloudflare counts per location.
     async allow(request, bucket) {
       const limiter = bucket === 'create' ? env.CREATE_LIMIT : bucket === 'report' ? env.REPORT_LIMIT : env.JOIN_LIMIT;
       if (!limiter) return true;
-      const ip = request.headers.get('cf-connecting-ip') ?? 'unknown';
-      return (await limiter.limit({ key: `${bucket}:${ip}` })).success;
+      return (await limiter.limit({ key: `${bucket}:${clientIp(request)}` })).success;
     },
     async health(request) {
       const checks = { ok: true, host: 'cloudflare', jurisdiction: env.DO_JURISDICTION ?? null };
@@ -59,8 +62,7 @@ function cloudflareHost(env) {
         Object.assign(checks, { ok: false, durableObject: String(error) });
       }
       if (env.JOIN_LIMIT) {
-        const ip = request.headers.get('cf-connecting-ip') ?? 'unknown';
-        const result = await env.JOIN_LIMIT.limit({ key: `health:${ip}` }).catch((error) => String(error));
+        const result = await env.JOIN_LIMIT.limit({ key: `health:${clientIp(request)}` }).catch((error) => String(error));
         Object.assign(checks, { rateLimit: result });
       } else {
         Object.assign(checks, { rateLimit: 'no binding' });
