@@ -22,9 +22,9 @@
     "deploy": "wrangler deploy"
   },
   "devDependencies": {
-    "wrangler": "^4.151.3"
+    "wrangler": "^4.157.0"
   },
   "dependencies": {
-    "ws": "^8.22.0"
+    "ws": "^8.22.1"
   }
 }
